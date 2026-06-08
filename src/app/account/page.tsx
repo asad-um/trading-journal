@@ -89,6 +89,11 @@ export default function AccountPage() {
       return;
     }
 
+    if (dialogType === 'withdrawal' && activePortfolio && amount > activePortfolio.current_balance) {
+      toast({ title: "Insufficient Funds", description: "You cannot withdraw more than your current balance.", variant: "destructive" });
+      return;
+    }
+
     setIsSubmittingEvent(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !activePortfolio) { setIsSubmittingEvent(false); return; }
@@ -200,20 +205,23 @@ export default function AccountPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-foreground text-sm px-2 py-1 bg-background rounded-md border border-border/50 shadow-sm">{p.name}</span>
-                      {!p.is_active && (
-                        <DropdownMenu>
+                      <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-text-muted hover:text-foreground">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-background border-border">
+                            <DropdownMenuItem className="focus:bg-background-tertiary cursor-pointer" onClick={() => {
+                              supabase.from('portfolios').update({ is_active: false }).eq('id', p.id).then(() => window.location.reload());
+                            }}>
+                              Deactivate Account
+                            </DropdownMenuItem>
                             <DropdownMenuItem className="text-loss focus:bg-loss/10 focus:text-loss cursor-pointer" onClick={() => handleDeleteAccount(p.id)}>
                               <Trash2 className="h-4 w-4 mr-2" /> Delete Account
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      )}
                     </div>
                   </div>
                   

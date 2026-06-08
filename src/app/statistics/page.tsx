@@ -137,35 +137,44 @@ export default function StatisticsPage() {
                   <CardTitle>Win Rate Overview</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 pb-0 flex flex-col justify-center">
-                  <div className="h-[200px]">
+                  <div className="h-[220px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={[
-                            { name: 'Wins', value: stats.wr.wins, color: '#22c55e' },
-                            { name: 'Losses', value: stats.wr.losses, color: '#ef4444' },
-                            { name: 'Breakevens', value: stats.wr.breakevens, color: '#f59e0b' },
+                            { name: 'Wins', value: stats.wr.wins, color: 'hsl(142, 71%, 45%)' },
+                            { name: 'Losses', value: stats.wr.losses, color: 'hsl(0, 84%, 60%)' },
+                            { name: 'Breakevens', value: stats.wr.breakevens, color: 'hsl(38, 92%, 50%)' },
                           ]}
-                          cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value"
+                          cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value"
+                          stroke="none"
+                          cornerRadius={4}
                         >
                           {
                             [
-                              { name: 'Wins', value: stats.wr.wins, color: '#22c55e' },
-                              { name: 'Losses', value: stats.wr.losses, color: '#ef4444' },
-                              { name: 'Breakevens', value: stats.wr.breakevens, color: '#f59e0b' },
+                              { name: 'Wins', value: stats.wr.wins, color: 'hsl(142, 71%, 45%)' },
+                              { name: 'Losses', value: stats.wr.losses, color: 'hsl(0, 84%, 60%)' },
+                              { name: 'Breakevens', value: stats.wr.breakevens, color: 'hsl(38, 92%, 50%)' },
                             ].map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
+                              <Cell key={`cell-${index}`} fill={entry.color} className="drop-shadow-md hover:opacity-80 transition-opacity" />
                             ))
                           }
                         </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }} />
-                        <Legend />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                          itemStyle={{ color: 'hsl(var(--popover-foreground))', fontWeight: 600 }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-4xl font-black text-foreground drop-shadow-md">{stats.wr.winRate.toFixed(0)}%</span>
+                      <span className="text-[10px] uppercase tracking-widest text-text-muted mt-1 font-semibold">Win Rate</span>
+                    </div>
                   </div>
-                  <div className="text-center pb-6 mt-4">
-                    <p className="text-4xl font-bold">{stats.wr.winRate.toFixed(1)}%</p>
-                    <p className="text-sm text-text-muted mt-1">Consistency Metric</p>
+                  <div className="flex justify-center gap-4 mt-6 pb-2">
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-win"></div><span className="text-xs font-medium">{stats.wr.wins} W</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-loss"></div><span className="text-xs font-medium">{stats.wr.losses} L</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-breakeven"></div><span className="text-xs font-medium">{stats.wr.breakevens} BE</span></div>
                   </div>
                 </CardContent>
               </Card>
@@ -177,39 +186,39 @@ export default function StatisticsPage() {
                   <CardDescription>Key metrics defining your statistical edge.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="p-4 bg-background-secondary rounded-lg border border-border hover:border-primary/50 transition-colors">
-                    <p className="text-xs text-text-muted mb-1 flex items-center">Net P&L</p>
-                    <p className={`font-mono text-xl font-bold ${stats.netPnL > 0 ? "text-win" : stats.netPnL < 0 ? "text-loss" : ""}`}>
+                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
+                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Net P&L</p>
+                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.netPnL > 0 ? "text-win" : stats.netPnL < 0 ? "text-loss" : ""}`}>
                       {stats.netPnL > 0 ? "+" : ""}{blurMoney(stats.netPnL)}
                     </p>
                   </div>
-                  <div className="p-4 bg-background-secondary rounded-lg border border-border hover:border-primary/50 transition-colors">
-                    <p className="text-xs text-text-muted mb-1 flex items-center">Profit Factor <InfoTooltip text="Gross Profit / Gross Loss" /></p>
-                    <p className={`font-mono text-xl font-bold ${stats.pf >= 1.5 ? "text-win" : "text-foreground"}`}>
+                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
+                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Profit Factor <InfoTooltip text="Gross Profit / Gross Loss" /></p>
+                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.pf >= 1.5 ? "text-win" : "text-foreground"}`}>
                       {stats.pf === Infinity ? '∞' : stats.pf.toFixed(2)}
                     </p>
                   </div>
-                  <div className="p-4 bg-background-secondary rounded-lg border border-border hover:border-primary/50 transition-colors">
-                    <p className="text-xs text-text-muted mb-1 flex items-center">Trade Expectancy <InfoTooltip text="Average expected dollar return per trade taken." /></p>
-                    <p className={`font-mono text-xl font-bold ${stats.expectancy > 0 ? "text-win" : "text-loss"}`}>
+                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
+                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Trade Expectancy <InfoTooltip text="Average expected dollar return per trade taken." /></p>
+                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.expectancy > 0 ? "text-win" : "text-loss"}`}>
                       {stats.expectancy > 0 ? "+" : ""}{blurMoney(stats.expectancy)}
                     </p>
                   </div>
-                  <div className="p-4 bg-background-secondary rounded-lg border border-border hover:border-primary/50 transition-colors">
-                    <p className="text-xs text-text-muted mb-1 flex items-center">Recovery Factor <InfoTooltip text="Net Profit / Max Drawdown. Higher means better bounce-back ability." /></p>
-                    <p className={`font-mono text-xl font-bold ${stats.recoveryFactor > 2 ? "text-win" : "text-foreground"}`}>
+                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
+                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Recovery Factor <InfoTooltip text="Net Profit / Max Drawdown. Higher means better bounce-back ability." /></p>
+                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.recoveryFactor > 2 ? "text-win" : "text-foreground"}`}>
                       {stats.recoveryFactor.toFixed(2)}
                     </p>
                   </div>
-                  <div className="p-4 bg-background-secondary rounded-lg border border-border hover:border-primary/50 transition-colors">
-                    <p className="text-xs text-text-muted mb-1 flex items-center">Max Drawdown <InfoTooltip text="Largest peak-to-trough drop in balance." /></p>
-                    <p className="font-mono text-xl font-bold text-loss">
+                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
+                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Max Drawdown <InfoTooltip text="Largest peak-to-trough drop in balance." /></p>
+                    <p className="font-mono text-3xl tracking-tight font-black text-loss">
                       -{blurMoney(stats.dd.maxDrawdownAmount)}
                     </p>
                   </div>
-                  <div className="p-4 bg-background-secondary rounded-lg border border-border hover:border-primary/50 transition-colors">
-                    <p className="text-xs text-text-muted mb-1 flex items-center">Total Fees Drag <InfoTooltip text="Estimated total fees deducted from Gross P&L." /></p>
-                    <p className="font-mono text-xl font-bold text-loss">
+                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
+                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Total Fees Drag <InfoTooltip text="Estimated total fees deducted from Gross P&L." /></p>
+                    <p className="font-mono text-3xl tracking-tight font-black text-loss">
                       -{blurMoney(stats.totalFees)}
                     </p>
                   </div>

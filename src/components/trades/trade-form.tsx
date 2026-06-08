@@ -443,7 +443,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                       <button 
                         type="button" 
                         onClick={() => field.onChange('Long')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-bold text-sm transition-all duration-300 ${direction === 'Long' ? 'bg-win text-white shadow-[0_0_20px_rgba(34,197,94,0.6)] border-win ring-2 ring-win/50 scale-105' : 'bg-background-tertiary text-text-muted hover:bg-background-tertiary/80 hover:text-text'}`}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-bold text-sm transition-all duration-200 ${direction === 'Long' ? 'bg-win/10 text-win border-win ring-1 ring-win/50 shadow-[0_0_10px_rgba(34,197,94,0.15)]' : 'bg-background-tertiary text-text-muted border-transparent hover:bg-background-tertiary/80 hover:text-text'}`}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 21 11.9-12.2"/><path d="M17 3h4v4"/><path d="M21 3l-6.1 6.1"/></svg>
                         LONG
@@ -451,7 +451,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                       <button 
                         type="button" 
                         onClick={() => field.onChange('Short')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-bold text-sm transition-all duration-300 ${direction === 'Short' ? 'bg-loss text-white shadow-[0_0_20px_rgba(239,68,68,0.6)] border-loss ring-2 ring-loss/50 scale-105' : 'bg-background-tertiary text-text-muted hover:bg-background-tertiary/80 hover:text-text'}`}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-bold text-sm transition-all duration-200 ${direction === 'Short' ? 'bg-loss/10 text-loss border-loss ring-1 ring-loss/50 shadow-[0_0_10px_rgba(239,68,68,0.15)]' : 'bg-background-tertiary text-text-muted border-transparent hover:bg-background-tertiary/80 hover:text-text'}`}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 3 11.9 12.2"/><path d="M17 21h4v-4"/><path d="M21 21l-6.1-6.1"/></svg>
                         SHORT

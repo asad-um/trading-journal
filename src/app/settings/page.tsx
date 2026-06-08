@@ -439,25 +439,37 @@ export default function SettingsPage() {
         <div className="mt-16 pt-8 border-t border-border/50">
           <Card className="border-loss/30 bg-loss/5">
             <CardHeader>
-              <CardTitle className="text-loss text-lg">Danger Zone</CardTitle>
+              <CardTitle className="text-loss text-lg">Factory Reset</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <p className="text-sm text-text-muted max-w-lg">
-                Permanently delete your account, wiping all trade history, portfolio ledgers, and custom playbooks. This action cannot be undone.
+                Perform a Factory Reset. This permanently deletes all your trades, custom portfolios, and ledger events, starting you fresh with a single default $1,000 account. Your login and strategies will remain.
               </p>
               <Button variant="destructive" onClick={async () => {
-                if(confirm("Are you absolutely sure you want to permanently delete your account and all data? This cannot be undone.")) {
+                if(confirm("Are you absolutely sure you want to Factory Reset your journal? All trades, portfolios, and history will be permanently deleted. You will start fresh with a default account.")) {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) return;
                   
-                  // Delete the profile row. Because of ON DELETE CASCADE, this instantly wipes trades, events, portfolios, and settings.
-                  await supabase.from('profiles').delete().eq('id', user.id);
+                  // Delete all sub-data
+                  await Promise.all([
+                    supabase.from('trades').delete().eq('user_id', user.id),
+                    supabase.from('account_events').delete().eq('user_id', user.id),
+                    supabase.from('portfolios').delete().eq('user_id', user.id)
+                  ]);
                   
-                  // Sign the user out of the dead Auth shell
-                  await supabase.auth.signOut();
-                  window.location.href = "/register";
+                  // Recreate default portfolio
+                  await supabase.from('portfolios').insert({
+                    user_id: user.id,
+                    name: 'Main Account',
+                    is_active: true,
+                    starting_balance: 1000,
+                    current_balance: 1000
+                  });
+                  
+                  toast({ title: "Factory Reset Complete", description: "Your journal has been completely wiped clean." });
+                  window.location.href = "/dashboard";
                 }
-              }}>Delete Account</Button>
+              }}>Factory Reset Journal</Button>
             </CardContent>
           </Card>
         </div>
