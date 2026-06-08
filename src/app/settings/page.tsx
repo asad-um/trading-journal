@@ -1,0 +1,468 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { AppLayout } from "@/components/layout/app-layout";
+import { supabase } from "@/lib/supabase";
+import { Profile, UserSettings } from "@/types";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Download, Plus, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export default function SettingsPage() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Temporary states for new list items
+  const [newItemInputs, setNewItemInputs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchData();
+  }, [toast]);
+
+  async function fetchData() {
+    setIsLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const [profRes, setRes] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", user.id).single(),
+      supabase.from("user_settings").select("*").eq("user_id", user.id).single()
+    ]);
+
+    if (profRes.data) setProfile(profRes.data);
+    if (setRes.data) setSettings(setRes.data);
+    setIsLoading(false);
+  }
+
+  const handleUpdateProfile = async (field: keyof Profile, value: string | number) => {
+    if (!profile) return;
+    const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", profile.id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setProfile({ ...profile, [field]: value as never });
+      toast({ title: "Saved", description: "Profile setting updated successfully." });
+    }
+  };
+
+  const handleUpdateList = async (listName: keyof UserSettings, newList: { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }[]) => {
+    if (!settings) return;
+    const { error } = await supabase.from("user_settings").update({ [listName]: newList }).eq("id", settings.id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setSettings({ ...settings, [listName]: newList as never });
+      toast({ title: "Saved", description: "List updated successfully." });
+    }
+  };
+
+  const handleAddListItem = (listName: keyof UserSettings, isAsset: boolean = false) => {
+    if (!settings) return;
+    const val = newItemInputs[listName] || "";
+    if (!val.trim()) return;
+
+    let newItem: { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown };
+    if (isAsset) {
+      // Split by comma: &quot;SYMBOL, Class&quot; e.g. "BTCUSD, Crypto"
+      const parts = val.split(",");
+      newItem = {
+        symbol: parts[0].trim().toUpperCase(),
+        asset_class: parts.length > 1 ? parts[1].trim() : "Other",
+        custom: true
+      };
+    } else {
+      newItem = {
+        id: Math.random().toString(36).substring(7),
+        label: val.trim(),
+        name: val.trim() // Some lists use 'name' instead of 'label'
+      };
+    }
+
+    const currentList = Array.isArray(settings[listName]) ? [...(settings[listName] as { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }[])] : [];
+    
+    // Quick deduplication check
+    if (isAsset) {
+      if (currentList.some(i => i.symbol === newItem.symbol)) {
+         toast({ title: "Exists", description: "Item already exists.", variant: "destructive" });
+         return;
+      }
+    } else {
+      if (currentList.some(i => i.label === newItem.label || i.name === newItem.name)) {
+         toast({ title: "Exists", description: "Item already exists.", variant: "destructive" });
+         return;
+      }
+    }
+
+    currentList.push(newItem);
+    handleUpdateList(listName, currentList);
+    setNewItemInputs(prev => ({ ...prev, [listName]: "" }));
+  };
+
+  const handleRemoveListItem = (listName: keyof UserSettings, identifier: string, isAsset: boolean = false) => {
+    if (!settings) return;
+    const currentList = Array.isArray(settings[listName]) ? (settings[listName] as { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }[]) : [];
+    let newList;
+    
+    if (isAsset) {
+      // Prevent deleting non-custom assets
+      const item = currentList.find(i => i.symbol === identifier);
+      if (item && !item.custom) {
+        toast({ title: "Error", description: "Cannot delete default assets.", variant: "destructive" });
+        return;
+      }
+      newList = currentList.filter(i => i.symbol !== identifier);
+    } else {
+      newList = currentList.filter(i => i.id !== identifier);
+    }
+    
+    handleUpdateList(listName, newList);
+  };
+
+  const handleExportCSV = async () => {
+    if (!profile) return;
+    const { data, error } = await supabase.from("trades").select("*").eq("user_id", profile.id);
+    if (error) {
+      toast({ title: "Export Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    
+    if (data && data.length > 0) {
+      const header = Object.keys(data[0]).join(",");
+      const rows = data.map(obj => Object.values(obj).map(v => typeof v === 'object' ? JSON.stringify(v).replace(/,/g, ';') : v).join(","));
+      const csv = [header, ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `wyckoff-journal-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+    } else {
+      toast({ title: "No Data", description: "No trades to export." });
+    }
+  };
+
+  if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
+
+  return (
+    <AppLayout>
+      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 pb-20 w-full">
+        <div className="flex flex-col space-y-1 mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
+          <p className="text-text-muted">Manage your workspace preferences, playbooks, and exports.</p>
+        </div>
+        
+        <Tabs defaultValue="preferences" className="w-full">
+          <TabsList className="bg-transparent border-b border-border w-full justify-start rounded-none h-auto p-0 space-x-8 overflow-x-auto flex-nowrap md:flex-wrap">
+            <TabsTrigger value="preferences" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Preferences</TabsTrigger>
+            <TabsTrigger value="strategies" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Strategies & Playbooks</TabsTrigger>
+<TabsTrigger value="lists" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Checklists & Categories</TabsTrigger>
+            <TabsTrigger value="assets" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Assets & Platforms</TabsTrigger>
+            <TabsTrigger value="export" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Export Data</TabsTrigger>
+            
+          </TabsList>
+          
+          {/* TAB 1: Preferences */}
+          <TabsContent value="preferences" className="space-y-6 pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Preferences</CardTitle>
+                <CardDescription>Manage default risk, currency, and theme.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Default Risk Percentage (%)</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="number" 
+                      step="0.1" 
+                      value={profile?.default_risk_percentage || 0} 
+                      onChange={(e) => setProfile(prev => prev ? { ...prev, default_risk_percentage: parseFloat(e.target.value) } : null)}
+                    />
+                    <Button onClick={() => handleUpdateProfile('default_risk_percentage', profile?.default_risk_percentage || 0)}>Save</Button>
+                  </div>
+                  <p className="text-xs text-text-muted">Used automatically when logging a new trade.</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Display Currency</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="text" 
+                      value={profile?.currency || 'USD'} 
+                      onChange={(e) => setProfile(prev => prev ? { ...prev, currency: e.target.value } : null)}
+                    />
+                    <Button onClick={() => handleUpdateProfile('currency', profile?.currency || 'USD')}>Save</Button>
+                  </div>
+                  <p className="text-xs text-text-muted">Changes the currency label only (no conversion).</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+
+          {/* TAB 1.5: Strategies */}
+          <TabsContent value="strategies" className="space-y-6 pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Strategy Playbooks</CardTitle>
+                <CardDescription>Format: &quot;Strategy | Playbook&quot; (e.g. Wyckoff | Blue Box)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Strategy | Sub-strategy..." 
+                    value={newItemInputs['strategies_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, strategies_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('strategies_list')}
+                  />
+                  <Button onClick={() => handleAddListItem('strategies_list')}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.strategies_list?.map((item: { id?: string; label?: string; name?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }) => (
+                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <span className="text-sm font-semibold">{item.label || item.name}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('strategies_list', item.id || '')}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 2: Lists & Categories */}
+          <TabsContent value="lists" className="space-y-6 pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Criteria Checklist</CardTitle>
+                <CardDescription>Manage your pre-trade confirmation criteria.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="New criterion..." 
+                    value={newItemInputs['criteria_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, criteria_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('criteria_list')}
+                  />
+                  <Button onClick={() => handleAddListItem('criteria_list')}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.criteria_list?.map((item: { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }) => (
+                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <span className="text-sm">{item.label}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('criteria_list', item.id || "")}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Entry Events</CardTitle>
+                <CardDescription>Manage your standard entry signals (e.g., Spring, ChoCh).</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="New entry event..." 
+                    value={newItemInputs['entry_events_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, entry_events_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('entry_events_list')}
+                  />
+                  <Button onClick={() => handleAddListItem('entry_events_list')}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.entry_events_list?.map((item: { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }) => (
+                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <span className="text-sm">{item.label}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('entry_events_list', item.id || "")}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Mistake Categories</CardTitle>
+                <CardDescription>Common mistakes you make (used for journaling discipline).</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="New mistake category..." 
+                    value={newItemInputs['mistake_categories_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, mistake_categories_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('mistake_categories_list')}
+                  />
+                  <Button onClick={() => handleAddListItem('mistake_categories_list')}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.mistake_categories_list?.map((item: { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }) => (
+                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <span className="text-sm">{item.label}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('mistake_categories_list', item.id || "")}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Assets & Platforms */}
+          <TabsContent value="assets" className="space-y-6 pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Traded Assets</CardTitle>
+                <CardDescription>Your instrument watchlist. Format: &quot;SYMBOL, Class&quot;</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="e.g. BTCUSD, Crypto" 
+                    value={newItemInputs['asset_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, asset_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('asset_list', true)}
+                  />
+                  <Button onClick={() => handleAddListItem('asset_list', true)}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.asset_list?.map((item: { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }) => (
+                    <div key={item.symbol} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <div>
+                        <span className="text-sm font-bold">{item.symbol}</span>
+                        <span className="text-xs text-text-muted ml-2">{item.asset_class}</span>
+                      </div>
+                      {item.custom && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('asset_list', item.symbol || "", true)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Brokers</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Broker name..." 
+                      value={newItemInputs['broker_list'] || ""}
+                      onChange={e => setNewItemInputs(p => ({...p, broker_list: e.target.value}))}
+                      onKeyDown={e => e.key === 'Enter' && handleAddListItem('broker_list')}
+                    />
+                    <Button onClick={() => handleAddListItem('broker_list')}><Plus className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                    {settings?.broker_list?.map((item: { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }) => (
+                      <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                        <span className="text-sm">{item.name || item.label}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('broker_list', item.id || "")}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Platforms</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Platform name..." 
+                      value={newItemInputs['execution_platforms_list'] || ""}
+                      onChange={e => setNewItemInputs(p => ({...p, execution_platforms_list: e.target.value}))}
+                      onKeyDown={e => e.key === 'Enter' && handleAddListItem('execution_platforms_list')}
+                    />
+                    <Button onClick={() => handleAddListItem('execution_platforms_list')}><Plus className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                    {settings?.execution_platforms_list?.map((item: { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }) => (
+                      <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                        <span className="text-sm">{item.name || item.label}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('execution_platforms_list', item.id || "")}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* TAB 4: Export */}
+          <TabsContent value="export" className="pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Export Data</CardTitle>
+                <CardDescription>Download your trading history.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button onClick={handleExportCSV} className="w-full md:w-auto">
+                  <Download className="mr-2 h-4 w-4" /> Export All Trades (CSV)
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+
+
+        </Tabs>
+
+        {/* Detached Danger Zone */}
+        <div className="mt-16 pt-8 border-t border-border/50">
+          <Card className="border-loss/30 bg-loss/5">
+            <CardHeader>
+              <CardTitle className="text-loss text-lg">Danger Zone</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <p className="text-sm text-text-muted max-w-lg">
+                Permanently delete your account, wiping all trade history, portfolio ledgers, and custom playbooks. This action cannot be undone.
+              </p>
+              <Button variant="destructive" onClick={async () => {
+                if(confirm("Are you absolutely sure you want to permanently delete your account and all data? This cannot be undone.")) {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return;
+                  
+                  // Delete the profile row. Because of ON DELETE CASCADE, this instantly wipes trades, events, portfolios, and settings.
+                  await supabase.from('profiles').delete().eq('id', user.id);
+                  
+                  // Sign the user out of the dead Auth shell
+                  await supabase.auth.signOut();
+                  window.location.href = "/register";
+                }
+              }}>Delete Account</Button>
+            </CardContent>
+          </Card>
+        </div>
+
+      </div>
+    </AppLayout>
+  );
+}

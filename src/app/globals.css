@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode: Cool toned, crisp and modern */
+    --background: 210 20% 98%; /* Soft cool off-white */
+    --foreground: 220 30% 12%; /* Deep slate for text */
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 12%;
+
+    /* Cool blue accent for light mode */
+    --primary: 214 85% 55%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 214 20% 90%;
+    --secondary-foreground: 220 30% 12%;
+
+    --muted: 214 20% 90%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 214 85% 55%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 20% 85%;
+    --input: 214 20% 85%;
+    --ring: 214 85% 55%;
+
+    --radius: 0.75rem; /* Modern rounded corners */
+  }
+  
+  .dark {
+    /* Dark Mode: Deep cool blues/slates, very modern */
+    --background: 222 47% 7%; /* Very deep cool midnight blue */
+    --foreground: 210 40% 98%; /* Crisp white text */
+
+    --card: 220 40% 11%; /* Slightly lighter slate for cards */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 40% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Electric cool cyan/blue accent for dark mode */
+    --primary: 200 90% 55%; 
+    --primary-foreground: 222 47% 7%;
+
+    --secondary: 220 30% 16%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 220 30% 16%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 200 90% 55%;
+    --accent-foreground: 222 47% 7%;
+
+    --destructive: 0 62.8% 45%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 30% 16%;
+    --input: 220 30% 16%;
+    --ring: 200 90% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Adding some smooth modern scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
