@@ -27,13 +27,23 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setIsLoading(false); return; }
 
-      const [profileRes, tradesRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).single(),
-        supabase.from("trades").select("*").eq("user_id", user.id).order("trade_date", { ascending: true })
-      ]);
+      // 1. Get the currently active portfolio
+      const { data: activePort } = await supabase.from('portfolios').select('*').eq('user_id', user.id).eq('is_active', true).single();
+      
+      if (!activePort) {
+        setProfile(null);
+        setTrades([]);
+        setIsLoading(false);
+        return;
+      }
 
-      if (profileRes.data) setProfile(profileRes.data);
-      if (tradesRes.data) setTrades(tradesRes.data);
+      // 2. Fetch the trades strictly for that active portfolio
+      const { data: tradesRes } = await supabase.from("trades").select("*").eq("portfolio_id", activePort.id).order("trade_date", { ascending: true });
+
+      // 3. Set the profile state completely using the Active Portfolio data (Not the generic profiles table)
+      setProfile(activePort as any);
+      if (tradesRes) setTrades(tradesRes);
+      
       setIsLoading(false);
     }
     fetchData();
@@ -56,8 +66,10 @@ export default function DashboardPage() {
     const avgWin = wins.length > 0 ? wins.reduce((acc, t) => acc + t.net_pnl, 0) / wins.length : 0;
     const avgLoss = losses.length > 0 ? losses.reduce((acc, t) => acc + t.net_pnl, 0) / losses.length : 0;
     
-    const avgWinPercent = profile.starting_balance > 0 ? (avgWin / profile.starting_balance) * 100 : 0;
-    const avgLossPercent = profile.starting_balance > 0 ? (avgLoss / profile.starting_balance) * 100 : 0;
+    // If starting balance is 0, percentages break. Fallback to using current_balance if available, else just cap it at 0 to avoid Infinity errors.
+    const baseForMath = profile.starting_balance > 0 ? profile.starting_balance : (profile.current_balance > 0 ? profile.current_balance : 1);
+    const avgWinPercent = (avgWin / baseForMath) * 100;
+    const avgLossPercent = (avgLoss / baseForMath) * 100;
 
     // Cumulative Daily P&L Tracker
     let runningPnL = 0;
