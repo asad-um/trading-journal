@@ -2,10 +2,10 @@ import * as z from "zod";
 
 export const tpLevelSchema = z.object({
   level: z.number(),
-  price: z.number().positive(),
-  position_percent: z.number().min(1).max(100),
-  rr: z.number(),
-  potential_pnl: z.number(),
+  price: z.coerce.number().positive(),
+  position_percent: z.coerce.number().min(1).max(100),
+  rr: z.coerce.number(),
+  potential_pnl: z.coerce.number(),
   hit: z.boolean().default(false),
 });
 

@@ -88,13 +88,22 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setIsLoading(false); return; }
       
+      const { data: activePort } = await supabase.from('portfolios').select('*').eq('user_id', user.id).eq('is_active', true).single();
+      
+      if (!activePort) {
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
       const [profRes, setRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('user_settings').select('*').eq('user_id', user.id).single()
       ]);
       
       if (profRes.data) {
-        setProfile(profRes.data);
+        // We override the profile balance with the active portfolio balance so the Risk Calculator uses the right money!
+        setProfile({ ...profRes.data, current_balance: activePort.current_balance, starting_balance: activePort.starting_balance });
         if (!initialData) form.setValue('risk_percentage', profRes.data.default_risk_percentage);
       }
       
@@ -332,6 +341,8 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+      const { data: activePort } = await supabase.from('portfolios').select('id').eq('user_id', user.id).eq('is_active', true).single();
+      if (!activePort) throw new Error("No active account selected. Please select one in the sidebar.");
 
       const sessionDetected = detectSession(data.trade_time_utc || "14:30");
 
@@ -383,11 +394,23 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
-  if (isLoading || !settings || !profile) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4 text-center">
         <Loader2 className="animate-spin h-8 w-8 text-primary" />
         <p className="text-text-muted">Loading framework...</p>
+      </div>
+    );
+  }
+
+  if (!profile || !settings) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4 text-center">
+        <h2 className="text-2xl font-bold text-loss">No Active Account</h2>
+        <p className="text-text-muted max-w-md">
+          You do not currently have an active trading account. You cannot log a trade without selecting a portfolio first.
+        </p>
+        <Button variant="outline" onClick={() => router.push('/account')}>Go to Account Manager</Button>
       </div>
     );
   }
@@ -647,13 +670,13 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FormField control={form.control} name="entry_price" render={({ field }) => (
-                <FormItem><FormLabel>Entry Price</FormLabel><FormControl><Input type="text" inputMode="decimal" className="h-10" {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Entry Price</FormLabel><FormControl><Input type="number" step="any" className="h-10" {...field} /></FormControl></FormItem>
               )} />
               <FormField control={form.control} name="stop_loss_price" render={({ field }) => (
-                <FormItem><FormLabel>Stop Loss Price</FormLabel><FormControl><Input type="text" inputMode="decimal" className="h-10" {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Stop Loss Price</FormLabel><FormControl><Input type="number" step="any" className="h-10" {...field} /></FormControl></FormItem>
               )} />
               <FormField control={form.control} name="risk_percentage" render={({ field }) => (
-                <FormItem><FormLabel>Risk Percentage (%)</FormLabel><FormControl><Input type="text" inputMode="decimal" step="0.1" className="h-10" {...field} /></FormControl>
+                <FormItem><FormLabel>Risk Percentage (%)</FormLabel><FormControl><Input type="number" step="any" step="0.1" className="h-10" {...field} /></FormControl>
                 <FormDescription className="text-primary font-medium text-xs">Risk: \${riskAmtCalculated.toFixed(2)}</FormDescription></FormItem>
               )} />
             </div>
@@ -693,10 +716,10 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                   return (
                     <div key={field.id} className="flex gap-4 items-end bg-background-secondary p-3 rounded-lg border border-border">
                       <FormField control={form.control} name={`tp_levels.${index}.price`} render={({ field: f }) => (
-                        <FormItem className="flex-1"><FormLabel className="text-xs">TP {index+1} Price</FormLabel><FormControl><Input type="text" inputMode="decimal" className="h-9" {...f} /></FormControl></FormItem>
+                        <FormItem className="flex-1"><FormLabel className="text-xs">TP {index+1} Price</FormLabel><FormControl><Input type="number" step="any" className="h-9" {...f} /></FormControl></FormItem>
                       )} />
                       <FormField control={form.control} name={`tp_levels.${index}.position_percent`} render={({ field: f }) => (
-                        <FormItem className="w-20"><FormLabel className="text-xs">Close %</FormLabel><FormControl><Input type="text" inputMode="decimal" className="h-9" {...f} /></FormControl></FormItem>
+                        <FormItem className="w-20"><FormLabel className="text-xs">Close %</FormLabel><FormControl><Input type="number" step="any" className="h-9" {...f} /></FormControl></FormItem>
                       )} />
                       <div className="w-24 pb-1.5 flex justify-end">
                         <span className="text-xs font-mono font-medium text-text-muted">1:{rr.toFixed(2)} R</span>
@@ -731,6 +754,42 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                     <SelectItem value="Cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
+              </FormItem>
+            )} />
+          </CardContent>
+        </Card>
+
+                {/* Section 6: Notes & Review */}
+        <Card className="border-border/50 shadow-sm bg-background">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <span className="bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded text-sm">6</span> 
+              Trade Notes & Review
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <FormField control={form.control} name="pre_trade_reasoning" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pre-Trade Reasoning</FormLabel>
+                <FormControl>
+                  <textarea 
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]" 
+                    placeholder="Why are you taking this trade? What is your edge?" 
+                    {...field} 
+                  />
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="post_trade_lesson" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Post-Trade Lesson</FormLabel>
+                <FormControl>
+                  <textarea 
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]" 
+                    placeholder="What did you learn? Did you follow your plan?" 
+                    {...field} 
+                  />
+                </FormControl>
               </FormItem>
             )} />
           </CardContent>
