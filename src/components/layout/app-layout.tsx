@@ -128,7 +128,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto pb-16 md:pb-0 relative bg-background">
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden pb-16 md:pb-0 relative bg-background">
         {children}
       </main>
 

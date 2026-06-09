@@ -284,7 +284,7 @@ export default function AccountPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                 <History className="h-6 w-6 text-primary" />
-                Transaction Ledger
+                Transactions
               </h2>
             </div>
 

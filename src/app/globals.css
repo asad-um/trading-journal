@@ -5,23 +5,23 @@
 @layer base {
   :root {
     /* Light Mode: High-Contrast SaaS */
-    --background: 210 25% 97%; /* Very slight blue-tinted cool grey */
-    --foreground: 220 40% 10%; /* Almost black slate */
+    --background: 210 25% 97%;
+    --foreground: 220 40% 10%;
 
-    --card: 0 0% 100%; /* Pure white cards so they pop against the background */
+    --card: 0 0% 100%;
     --card-foreground: 220 40% 10%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 220 40% 10%;
 
-    --primary: 220 90% 50%; /* Deep electric blue */
+    --primary: 220 90% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 20% 92%; /* Slightly darker grey for secondary inputs */
+    --secondary: 214 20% 92%;
     --secondary-foreground: 220 40% 10%;
 
     --muted: 214 20% 92%;
-    --muted-foreground: 215 16% 40%; /* Darker muted text for readability */
+    --muted-foreground: 215 16% 40%;
 
     --accent: 220 90% 50%;
     --accent-foreground: 0 0% 100%;
@@ -29,25 +29,23 @@
     --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 82%; /* Darker borders to frame components clearly */
+    --border: 214 20% 82%;
     --input: 214 20% 82%;
     --ring: 220 90% 50%;
-
-    --radius: 0.75rem; /* Modern rounded corners */
+    --radius: 0.75rem;
   }
   
   .dark {
     /* Dark Mode: Deep cool blues/slates, very modern */
-    --background: 222 47% 7%; /* Very deep cool midnight blue */
-    --foreground: 210 40% 98%; /* Crisp white text */
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
 
-    --card: 220 40% 11%; /* Slightly lighter slate for cards */
+    --card: 220 40% 11%;
     --card-foreground: 210 40% 98%;
 
     --popover: 220 40% 11%;
     --popover-foreground: 210 40% 98%;
 
-    /* Electric cool cyan/blue accent for dark mode */
     --primary: 200 90% 55%; 
     --primary-foreground: 222 47% 7%;
 
