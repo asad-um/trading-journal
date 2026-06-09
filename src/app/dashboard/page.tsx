@@ -47,6 +47,7 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
     
+      fetchData();
       const channel = supabase.channel('realtime-page.tsx')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => fetchData(true))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))

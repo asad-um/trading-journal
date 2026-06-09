@@ -7,7 +7,8 @@ import { Trade, Profile } from "@/types";
 import { calculateWinRate, calculateProfitFactor, calculateMaxDrawdown } from "@/lib/calculations";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, AreaChart, Area } from "recharts";
+import { format } from "date-fns";
 import { InfoTooltip } from "@/components/info-tooltip";
 import { usePrivacy } from "@/components/privacy-provider";
 
@@ -35,6 +36,7 @@ export default function StatisticsPage() {
       setIsLoading(false);
     }
     
+      fetchData();
       const channel = supabase.channel('realtime-page.tsx')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => fetchData(true))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))
@@ -233,6 +235,71 @@ export default function StatisticsPage() {
                     <p className={`font-mono text-3xl tracking-tight font-black ${stats.rrEfficiency >= 80 ? "text-win" : stats.rrEfficiency >= 50 ? "text-breakeven" : "text-loss"}`}>
                       {stats.rrEfficiency.toFixed(1)}%
                     </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            
+            {/* Deep Visual Analytics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Drawdown Depth</CardTitle>
+                  <CardDescription>Visualizing your account dips from all-time highs.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[250px] w-full">
+                    {stats.drawdownData.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-text-muted text-sm border-2 border-dashed border-border rounded-lg">No data</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={stats.drawdownData}>
+                          <defs>
+                            <linearGradient id="colorDd" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v: any) => `${Number(v).toFixed(0)}%`} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                            formatter={(val: any) => [`${Number(val).toFixed(2)}%`, 'Drawdown']}
+                          />
+                          <Area type="step" dataKey="drawdownPercent" stroke="hsl(0, 84%, 60%)" fillOpacity={1} fill="url(#colorDd)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Time of Day Heatmap (UTC)</CardTitle>
+                  <CardDescription>Identifying your most profitable trading windows.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[250px] w-full">
+                    {stats.timeOfDayData.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-text-muted text-sm border-2 border-dashed border-border rounded-lg">No data</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                          <XAxis type="number" dataKey="hour" name="Hour" unit=":00" domain={[0, 23]} stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickCount={12} />
+                          <YAxis type="number" dataKey="pnl" name="PnL" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v: any) => `${v}`} />
+                          <Tooltip 
+                            cursor={{ strokeDasharray: '3 3' }}
+                            contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                            formatter={(value: any, name: string) => name === 'PnL' ? [`${blurMoney(value)}`, 'Net PnL'] : [value, name]}
+                          />
+                          <Scatter data={stats.timeOfDayData.filter((t: any) => t.pnl > 0)} fill="hsl(142, 71%, 45%)" />
+                          <Scatter data={stats.timeOfDayData.filter((t: any) => t.pnl <= 0)} fill="hsl(0, 84%, 60%)" />
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </CardContent>
               </Card>

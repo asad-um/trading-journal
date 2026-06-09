@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     }
 
     if (!process.env.CLOUDINARY_API_SECRET) {
-      return NextResponse.json({ success: false, message: "Garbage collection skipped (No API Secret)" });
+      return NextResponse.json({ error: "CLOUDINARY_API_SECRET missing. Cannot authenticate bulk delete request." }, { status: 400 });
     }
 
     // Cloudinary admin API for bulk deletion

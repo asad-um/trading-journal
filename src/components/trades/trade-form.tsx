@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, UploadCloud, X, Zap, CheckCircle2,  } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { usePrivacy } from "@/components/privacy-provider";
 
@@ -322,13 +323,16 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     // Send garbage collection request to backend to physically destroy the Cloudinary file
     if (imageToDelete && imageToDelete.public_id) {
       try {
-        await fetch('/api/delete-image', {
+        const res = await fetch('/api/delete-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ public_id: imageToDelete.public_id })
         });
-      } catch (e) {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+      } catch (e: any) {
         console.error("Garbage collection failed:", e);
+        toast({ title: "Image Cleanup Warning", description: e.message || "Failed to delete image from Cloudinary.", variant: "warning" });
       }
     }
   };
@@ -829,11 +833,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
               <FormItem>
                 <FormLabel>Pre-Trade Reasoning</FormLabel>
                 <FormControl>
-                  <textarea 
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]" 
-                    placeholder="Why are you taking this trade? What is your edge?" 
-                    {...field} 
-                  />
+                  <RichTextEditor value={field.value || ""} onChange={field.onChange} />
                 </FormControl>
               </FormItem>
             )} />
@@ -841,11 +841,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
               <FormItem>
                 <FormLabel>Post-Trade Lesson</FormLabel>
                 <FormControl>
-                  <textarea 
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]" 
-                    placeholder="What did you learn? Did you follow your plan?" 
-                    {...field} 
-                  />
+                  <RichTextEditor value={field.value || ""} onChange={field.onChange} />
                 </FormControl>
               </FormItem>
             )} />

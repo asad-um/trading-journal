@@ -32,10 +32,13 @@ export async function POST(req: Request) {
     }
 
     if (!process.env.CLOUDINARY_API_SECRET) {
-      return NextResponse.json({ success: false, message: "Garbage collection skipped (No API Secret)" });
+      return NextResponse.json({ error: "CLOUDINARY_API_SECRET missing in environment variables. Cannot authenticate delete request." }, { status: 400 });
     }
 
-    const result = await cloudinary.uploader.destroy(public_id);
+    const result = await cloudinary.uploader.destroy(public_id, { invalidate: true });
+    if (result.result !== 'ok' && result.result !== 'not found') {
+      throw new Error(`Cloudinary rejected deletion: ${result.result}`);
+    }
     
     return NextResponse.json({ success: true, result });
   } catch (error: unknown) {
