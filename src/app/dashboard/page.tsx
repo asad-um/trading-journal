@@ -65,7 +65,7 @@ export default function DashboardPage() {
     const profitFactor = calculateProfitFactor(trades);
     
     // Closed trades only for performance metrics
-    const closed = trades.filter(t => ['Closed - Win', 'Closed - Loss', 'Breakeven'].includes(t.status));
+    const closed = trades.filter(t => ['Closed - Win', 'Closed - Loss', 'Breakeven', 'Partial'].includes(t.status));
     const totalClosedPnL = closed.reduce((acc, t) => acc + t.net_pnl, 0);
     
     // Average Win / Loss
@@ -105,7 +105,7 @@ export default function DashboardPage() {
 
     // Trade Lists
     const recentTrades = [...trades].sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime()).slice(0, 10);
-    const openPositions = trades.filter(t => t.status === 'Open' || t.status === 'Partial');
+    const openPositions = trades.filter(t => t.status === 'Open');
 
     return { 
       floatingPnL, 

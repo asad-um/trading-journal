@@ -53,7 +53,7 @@ export default function StatisticsPage() {
     const pf = calculateProfitFactor(trades);
     const dd = calculateMaxDrawdown(trades, profile.starting_balance);
     
-    const closed = trades.filter(t => ['Closed - Win', 'Closed - Loss', 'Breakeven'].includes(t.status));
+    const closed = trades.filter(t => ['Closed - Win', 'Closed - Loss', 'Breakeven', 'Partial'].includes(t.status));
     const grossPnL = closed.reduce((acc, t) => acc + t.gross_pnl, 0);
     const netPnL = closed.reduce((acc, t) => acc + t.net_pnl, 0);
     const totalFees = grossPnL - netPnL; // Rough estimate of fees

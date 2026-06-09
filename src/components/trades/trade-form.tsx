@@ -40,7 +40,15 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
 
   const form = useForm<TradeFormValues>({
     resolver: zodResolver(tradeSchema) as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      ...initialData,
+      tp_levels: typeof initialData.tp_levels === 'string' ? JSON.parse(initialData.tp_levels) : (initialData.tp_levels || []),
+      criteria_checked: typeof initialData.criteria_checked === 'string' ? JSON.parse(initialData.criteria_checked) : (initialData.criteria_checked || []),
+      tps_hit: typeof initialData.tps_hit === 'string' ? JSON.parse(initialData.tps_hit) : (initialData.tps_hit || []),
+      pre_trade_images: typeof initialData.pre_trade_images === 'string' ? JSON.parse(initialData.pre_trade_images) : (initialData.pre_trade_images || []),
+      post_trade_images: typeof initialData.post_trade_images === 'string' ? JSON.parse(initialData.post_trade_images) : (initialData.post_trade_images || []),
+      sl_hit: !!initialData.sl_hit
+    } : {
       trade_date: format(new Date(), "yyyy-MM-dd"),
       trade_time_utc: "14:30",
       analysis_timeframe: "1H",

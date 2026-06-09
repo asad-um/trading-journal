@@ -1,4 +1,5 @@
 "use client";
+import React, { useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Toggle } from '@/components/ui/toggle'
@@ -19,7 +20,7 @@ export function RichTextEditor({ value, onChange }: { value: string, onChange: (
   })
 
   // Sync external value changes (e.g. when loading initialData)
-  React.useEffect(() => {
+  useEffect(() => {
     if (editor && value !== editor.getHTML()) {
       editor.commands.setContent(value || '');
     }

@@ -11,6 +11,7 @@ import { Loader2, ArrowLeft, Edit } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import DOMPurify from "dompurify";
 import { usePrivacy } from "@/components/privacy-provider";
 
 export default function TradeDetailPage({ params }: { params: { id: string } }) {
@@ -134,13 +135,13 @@ export default function TradeDetailPage({ params }: { params: { id: string } }) 
               {trade.pre_trade_reasoning && (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-text-secondary border-b border-border/50 pb-2">Pre-Trade Reasoning</h3>
-                  <div className="prose prose-sm dark:prose-invert max-w-none bg-background-secondary/30 p-4 rounded-lg border border-border" dangerouslySetInnerHTML={{ __html: trade.pre_trade_reasoning }} />
+                  <div className="prose prose-sm dark:prose-invert max-w-none bg-background-secondary/30 p-4 rounded-lg border border-border" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(trade.pre_trade_reasoning) }} />
                 </div>
               )}
               {trade.post_trade_lesson && (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-text-secondary border-b border-border/50 pb-2">Post-Trade Lesson</h3>
-                  <div className="prose prose-sm dark:prose-invert max-w-none bg-background-secondary/30 p-4 rounded-lg border border-border" dangerouslySetInnerHTML={{ __html: trade.post_trade_lesson }} />
+                  <div className="prose prose-sm dark:prose-invert max-w-none bg-background-secondary/30 p-4 rounded-lg border border-border" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(trade.post_trade_lesson) }} />
                 </div>
               )}
             </CardContent>

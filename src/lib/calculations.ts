@@ -125,11 +125,13 @@ export interface WinRateResult {
  * Calculates win rates.
  */
 export function calculateWinRate(trades: Trade[]): WinRateResult {
-  const closed = trades.filter(t => t.status !== 'Cancelled' && t.status !== 'Open' && t.status !== 'Partial');
+  // Idealistic approach: 'Partial' trades that have hit TPs are technically realized wins in progress.
+  // We include them in the win rate if they have positive PnL.
+  const eligible = trades.filter(t => t.status !== 'Cancelled' && t.status !== 'Open');
   
-  const wins = closed.filter(t => t.status === 'Closed - Win').length;
-  const losses = closed.filter(t => t.status === 'Closed - Loss').length;
-  const breakevens = closed.filter(t => t.status === 'Breakeven').length;
+  const wins = eligible.filter(t => t.status === 'Closed - Win' || (t.status === 'Partial' && t.net_pnl > 0)).length;
+  const losses = eligible.filter(t => t.status === 'Closed - Loss' || (t.status === 'Partial' && t.net_pnl < 0)).length;
+  const breakevens = eligible.filter(t => t.status === 'Breakeven' || (t.status === 'Partial' && t.net_pnl === 0)).length;
   
   const total = wins + losses + breakevens;
   
@@ -149,7 +151,7 @@ export function calculateWinRate(trades: Trade[]): WinRateResult {
  */
 export function calculateProfitFactor(trades: Trade[]): number {
   const grossProfit = trades
-    .filter(t => t.status === 'Closed - Win' && t.net_pnl > 0)
+    .filter(t => t.net_pnl > 0 && t.status !== 'Cancelled' && t.status !== 'Open')
     .reduce((acc, t) => acc + t.net_pnl, 0);
     
   const grossLoss = Math.abs(
@@ -185,7 +187,7 @@ export function calculateMaxDrawdown(trades: Trade[], startingBalance: number): 
   let currentPeakDate: string | null = null;
   
   for (const trade of sorted) {
-    if (['Closed - Win', 'Closed - Loss', 'Breakeven'].includes(trade.status)) {
+    if (['Closed - Win', 'Closed - Loss', 'Breakeven', 'Partial'].includes(trade.status)) {
       currentBalance += trade.net_pnl;
       
       if (currentBalance > peak) {
