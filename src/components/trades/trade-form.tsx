@@ -19,6 +19,7 @@ import { Loader2, UploadCloud, X, Zap, CheckCircle2,  } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { usePrivacy } from "@/components/privacy-provider";
 
 const GLOBAL_CRITERIA = ["Volume Confluence", "Seek and Destroy", "Divergence", "Leader-Lagger Reference", "Volatility"];
 
@@ -33,6 +34,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
 
   const router = useRouter();
   const { toast } = useToast();
+  const { blurMoney } = usePrivacy();
 
   const form = useForm<TradeFormValues>({
     resolver: zodResolver(tradeSchema) as any, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -670,14 +672,14 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FormField control={form.control} name="entry_price" render={({ field }) => (
-                <FormItem><FormLabel>Entry Price</FormLabel><FormControl><Input type="number" step="any" className="h-10" {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Entry Price</FormLabel><FormControl><Input type="text" inputMode="decimal" className="h-10" {...field} /></FormControl></FormItem>
               )} />
               <FormField control={form.control} name="stop_loss_price" render={({ field }) => (
-                <FormItem><FormLabel>Stop Loss Price</FormLabel><FormControl><Input type="number" step="any" className="h-10" {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Stop Loss Price</FormLabel><FormControl><Input type="text" inputMode="decimal" className="h-10" {...field} /></FormControl></FormItem>
               )} />
               <FormField control={form.control} name="risk_percentage" render={({ field }) => (
-                <FormItem><FormLabel>Risk Percentage (%)</FormLabel><FormControl><Input type="number" step="any" step="0.1" className="h-10" {...field} /></FormControl>
-                <FormDescription className="text-primary font-medium text-xs">Risk: \${riskAmtCalculated.toFixed(2)}</FormDescription></FormItem>
+                <FormItem><FormLabel>Risk Percentage (%)</FormLabel><FormControl><Input type="text" inputMode="decimal" step="0.1" className="h-10" {...field} /></FormControl>
+                <FormDescription className="text-primary font-medium text-xs">Risk: {blurMoney(riskAmtCalculated)}</FormDescription></FormItem>
               )} />
             </div>
 
@@ -714,14 +716,14 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                   }
 
                   return (
-                    <div key={field.id} className="flex gap-4 items-end bg-background-secondary p-3 rounded-lg border border-border">
+                    <div key={field.id} className="flex flex-col sm:flex-row gap-4 sm:items-end bg-background-secondary p-4 rounded-lg border border-border">
                       <FormField control={form.control} name={`tp_levels.${index}.price`} render={({ field: f }) => (
-                        <FormItem className="flex-1"><FormLabel className="text-xs">TP {index+1} Price</FormLabel><FormControl><Input type="number" step="any" className="h-9" {...f} /></FormControl></FormItem>
+                        <FormItem className="w-full sm:flex-1"><FormLabel className="text-xs">TP {index+1} Price</FormLabel><FormControl><Input type="text" inputMode="decimal" className="h-9" {...f} /></FormControl></FormItem>
                       )} />
                       <FormField control={form.control} name={`tp_levels.${index}.position_percent`} render={({ field: f }) => (
-                        <FormItem className="w-20"><FormLabel className="text-xs">Close %</FormLabel><FormControl><Input type="number" step="any" className="h-9" {...f} /></FormControl></FormItem>
+                        <FormItem className="w-full sm:w-24"><FormLabel className="text-xs">Close %</FormLabel><FormControl><Input type="text" inputMode="decimal" className="h-9" {...f} /></FormControl></FormItem>
                       )} />
-                      <div className="w-24 pb-1.5 flex justify-end">
+                      <div className="w-full sm:w-24 pb-1.5 flex justify-start sm:justify-end mt-2 sm:mt-0">
                         <span className="text-xs font-mono font-medium text-text-muted">1:{rr.toFixed(2)} R</span>
                       </div>
                     </div>

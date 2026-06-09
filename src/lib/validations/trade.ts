@@ -2,10 +2,22 @@ import * as z from "zod";
 
 export const tpLevelSchema = z.object({
   level: z.number(),
-  price: z.coerce.number().positive(),
-  position_percent: z.coerce.number().min(1).max(100),
-  rr: z.coerce.number(),
-  potential_pnl: z.coerce.number(),
+  price: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()).positive(),
+  position_percent: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()).min(1).max(100),
+  rr: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()),
+  potential_pnl: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()),
   hit: z.boolean().default(false),
 });
 
@@ -29,17 +41,35 @@ export const tradeSchema = z.object({
     label: z.string(),
     checked: z.boolean()
   })).default([]),
-  entry_price: z.coerce.number().positive(),
-  stop_loss_price: z.coerce.number().positive(),
+  entry_price: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()).positive(),
+  stop_loss_price: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()).positive(),
   num_tp_levels: z.number().min(1).max(5),
   tp_levels: z.array(tpLevelSchema).default([]),
-  risk_percentage: z.coerce.number().positive(),
+  risk_percentage: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()).positive(),
   fee_type: z.enum(['Spread', 'Commission', 'Swap', 'Spread + Commission', 'Other']).optional(),
-  fee_amount: z.coerce.number().default(0),
+  fee_amount: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()).default(0),
   fee_in_pips: z.boolean().default(false),
-  pip_value: z.coerce.number().optional(),
+  pip_value: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()).optional(),
   status: z.enum(['Open', 'Partial', 'Closed - Win', 'Closed - Loss', 'Breakeven', 'Cancelled']).default('Open'),
-  breakeven_price: z.coerce.number().optional(),
+  breakeven_price: z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number()).optional(),
   tps_hit: z.array(z.number()).default([]),
   analysis_platform: z.string().default('TradingView'),
   execution_platform: z.string().default('CTrader'),

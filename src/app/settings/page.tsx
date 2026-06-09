@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
 import { Loader2, Download, Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   // Temporary states for new list items
   const [newItemInputs, setNewItemInputs] = useState<Record<string, string>>({});
@@ -44,7 +46,7 @@ export default function SettingsPage() {
     if (!profile) return;
     const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", profile.id);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
     } else {
       setProfile({ ...profile, [field]: value as never });
       toast({ title: "Saved", description: "Profile setting updated successfully." });
@@ -55,7 +57,7 @@ export default function SettingsPage() {
     if (!settings) return;
     const { error } = await supabase.from("user_settings").update({ [listName]: newList }).eq("id", settings.id);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
     } else {
       setSettings({ ...settings, [listName]: newList as never });
       toast({ title: "Saved", description: "List updated successfully." });
@@ -128,7 +130,7 @@ export default function SettingsPage() {
     if (!profile) return;
     const { data, error } = await supabase.from("trades").select("*").eq("user_id", profile.id);
     if (error) {
-      toast({ title: "Export Error", description: error.message, variant: "destructive" });
+      toast({ title: "Export Error", description: (error as Error).message, variant: "destructive" });
       return;
     }
     
@@ -157,52 +159,164 @@ export default function SettingsPage() {
           <p className="text-text-muted">Manage your workspace preferences, playbooks, and exports.</p>
         </div>
         
-        <Tabs defaultValue="preferences" className="w-full">
+        <Tabs defaultValue="general" className="w-full">
           <TabsList className="bg-transparent border-b border-border w-full justify-start rounded-none h-auto p-0 space-x-8 overflow-x-auto flex-nowrap md:flex-wrap">
-            <TabsTrigger value="preferences" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Preferences</TabsTrigger>
-            <TabsTrigger value="strategies" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Strategies & Playbooks</TabsTrigger>
-<TabsTrigger value="lists" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Checklists & Categories</TabsTrigger>
+            <TabsTrigger value="general" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">General</TabsTrigger>
+            <TabsTrigger value="strategies" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Playbooks</TabsTrigger>
+            <TabsTrigger value="lists" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Checklists</TabsTrigger>
             <TabsTrigger value="assets" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Assets & Platforms</TabsTrigger>
-            <TabsTrigger value="export" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Export Data</TabsTrigger>
-            
+            <TabsTrigger value="export" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Data Export</TabsTrigger>
           </TabsList>
           
           {/* TAB 1: Preferences */}
-          <TabsContent value="preferences" className="space-y-6 pt-4">
-            <Card>
+          <TabsContent value="general" className="space-y-8 pt-4 outline-none">
+            <Card className="border-border/60 shadow-sm bg-background">
               <CardHeader>
-                <CardTitle>Account Preferences</CardTitle>
-                <CardDescription>Manage default risk, currency, and theme.</CardDescription>
+                <CardTitle>Trade Preferences</CardTitle>
+                <CardDescription>Default settings applied when you log a new trade.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Default Risk Percentage (%)</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      type="number" 
-                      step="0.1" 
-                      value={profile?.default_risk_percentage || 0} 
-                      onChange={(e) => setProfile(prev => prev ? { ...prev, default_risk_percentage: parseFloat(e.target.value) } : null)}
-                    />
-                    <Button onClick={() => handleUpdateProfile('default_risk_percentage', profile?.default_risk_percentage || 0)}>Save</Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-text-muted font-semibold">Default Risk (%)</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        type="number" 
+                        step="0.1" 
+                        value={profile?.default_risk_percentage || 0} 
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, default_risk_percentage: parseFloat(e.target.value) } : null)}
+                        className="bg-background-secondary border-border/50 focus-visible:ring-primary/50"
+                      />
+                      <Button variant="secondary" onClick={() => handleUpdateProfile('default_risk_percentage', profile?.default_risk_percentage || 0)}>Save</Button>
+                    </div>
+                    <p className="text-xs text-text-muted">Calculates risk amount automatically based on your active portfolio balance.</p>
                   </div>
-                  <p className="text-xs text-text-muted">Used automatically when logging a new trade.</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Display Currency</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      type="text" 
-                      value={profile?.currency || 'USD'} 
-                      onChange={(e) => setProfile(prev => prev ? { ...prev, currency: e.target.value } : null)}
-                    />
-                    <Button onClick={() => handleUpdateProfile('currency', profile?.currency || 'USD')}>Save</Button>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-text-muted font-semibold">Display Currency</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        type="text" 
+                        value={profile?.currency || 'USD'} 
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, currency: e.target.value } : null)}
+                        className="bg-background-secondary border-border/50 focus-visible:ring-primary/50 uppercase"
+                      />
+                      <Button variant="secondary" onClick={() => handleUpdateProfile('currency', profile?.currency || 'USD')}>Save</Button>
+                    </div>
+                    <p className="text-xs text-text-muted">Visual label only (e.g. USD, EUR, GBP).</p>
                   </div>
-                  <p className="text-xs text-text-muted">Changes the currency label only (no conversion).</p>
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="border-border/60 shadow-sm bg-background">
+              <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>Customize the interface theme.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4">
+                  <Button 
+                    variant={theme === 'light' ? 'default' : 'outline'} 
+                    onClick={() => setTheme('light')}
+                    className={theme === 'light' ? 'bg-primary text-primary-foreground' : 'text-text-muted'}
+                  >
+                    Light Mode
+                  </Button>
+                  <Button 
+                    variant={theme === 'dark' ? 'default' : 'outline'} 
+                    onClick={() => setTheme('dark')}
+                    className={theme === 'dark' ? 'bg-primary text-primary-foreground' : 'text-text-muted'}
+                  >
+                    Dark Mode
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Danger Zone (Now integrated into General Tab) */}
+        <div className="mt-12 pt-8 border-t border-border/50">
+          <div className="flex flex-col space-y-2 mb-6">
+            <h2 className="text-2xl font-bold tracking-tight text-loss">Danger Zone</h2>
+            <p className="text-text-muted">Destructive actions for your account and data.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-loss/30 bg-loss/5">
+              <CardHeader>
+                <CardTitle className="text-loss text-lg">Factory Reset</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col justify-between gap-4 h-full">
+                <p className="text-sm text-text-muted">
+                  Permanently deletes all your trades, custom portfolios, and ledger events. Your login and settings will remain, and you will start fresh with a clean $0.00 Main Account.
+                </p>
+                <Button variant="outline" className="w-full text-loss border-loss/50 hover:bg-loss hover:text-white transition-all" onClick={async () => {
+                  if(confirm("Are you absolutely sure you want to Factory Reset your journal? This cannot be undone.")) {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+                    
+                    // Fetch all trades to garbage collect Cloudinary images
+                    const { data: trades } = await supabase.from('trades').select('pre_trade_images, post_trade_images').eq('user_id', user.id);
+                    if (trades) {
+                      const publicIds = [];
+                      trades.forEach(t => {
+                        (t.pre_trade_images || []).forEach(img => img.public_id && publicIds.push(img.public_id));
+                        (t.post_trade_images || []).forEach(img => img.public_id && publicIds.push(img.public_id));
+                      });
+                      if (publicIds.length > 0) {
+                        await fetch('/api/delete-images-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ public_ids: publicIds }) }).catch(console.error);
+                      }
+                    }
+
+                    // Delete all sub-data
+                    await Promise.all([
+                      supabase.from('trades').delete().eq('user_id', user.id),
+                      supabase.from('account_events').delete().eq('user_id', user.id),
+                      supabase.from('portfolios').delete().eq('user_id', user.id)
+                    ]);
+                    
+                    // Recreate default portfolio
+                    await supabase.from('portfolios').insert({
+                      user_id: user.id,
+                      name: 'Main Account',
+                      is_active: true,
+                      starting_balance: 0,
+                      current_balance: 0
+                    });
+                    
+                    toast({ title: "Factory Reset Complete", description: "Your journal has been completely wiped clean." });
+                    window.location.href = "/dashboard";
+                  }
+                }}>Factory Reset Journal</Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-loss/50 bg-loss/10 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+              <CardHeader>
+                <CardTitle className="text-loss text-lg">Delete Account</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col justify-between gap-4 h-full">
+                <p className="text-sm text-text-muted">
+                  Permanently deletes your entire account, wiping all trade history, portfolio ledgers, custom playbooks, and authentication records from our servers.
+                </p>
+                <Button variant="destructive" className="w-full shadow-lg hover:shadow-xl transition-all" onClick={async () => {
+                  if(confirm("Are you absolutely sure you want to permanently delete your account and all data? This cannot be undone.")) {
+                    try {
+                      const res = await fetch('/api/delete-account', { method: 'POST' });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Failed to delete account. Ensure SUPABASE_SERVICE_ROLE_KEY is set in Vercel.");
+                      
+                      await supabase.auth.signOut();
+                      window.location.href = "/register";
+                    } catch (error) {
+                      toast({ title: "Deletion Failed", description: (error as Error).message, variant: "destructive" });
+                    }
+                  }
+                }}>Permanently Delete Account</Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
           </TabsContent>
 
 
@@ -435,90 +549,7 @@ export default function SettingsPage() {
 
         </Tabs>
 
-        {/* Detached Danger Zone */}
-        <div className="mt-16 pt-8 border-t border-border/50">
-          <div className="flex flex-col space-y-2 mb-6">
-            <h2 className="text-2xl font-bold tracking-tight text-loss">Danger Zone</h2>
-            <p className="text-text-muted">Destructive actions for your account and data.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-loss/30 bg-loss/5">
-              <CardHeader>
-                <CardTitle className="text-loss text-lg">Factory Reset</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col justify-between gap-4 h-full">
-                <p className="text-sm text-text-muted">
-                  Permanently deletes all your trades, custom portfolios, and ledger events. Your login and settings will remain, and you will start fresh with a clean $0.00 Main Account.
-                </p>
-                <Button variant="outline" className="w-full text-loss border-loss/50 hover:bg-loss hover:text-white transition-all" onClick={async () => {
-                  if(confirm("Are you absolutely sure you want to Factory Reset your journal? This cannot be undone.")) {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) return;
-                    
-                    // Fetch all trades to garbage collect Cloudinary images
-                    const { data: trades } = await supabase.from('trades').select('pre_trade_images, post_trade_images').eq('user_id', user.id);
-                    if (trades) {
-                      const publicIds = [];
-                      trades.forEach(t => {
-                        (t.pre_trade_images || []).forEach(img => img.public_id && publicIds.push(img.public_id));
-                        (t.post_trade_images || []).forEach(img => img.public_id && publicIds.push(img.public_id));
-                      });
-                      if (publicIds.length > 0) {
-                        await fetch('/api/delete-images-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ public_ids: publicIds }) }).catch(console.error);
-                      }
-                    }
-
-                    // Delete all sub-data
-                    await Promise.all([
-                      supabase.from('trades').delete().eq('user_id', user.id),
-                      supabase.from('account_events').delete().eq('user_id', user.id),
-                      supabase.from('portfolios').delete().eq('user_id', user.id)
-                    ]);
-                    
-                    // Recreate default portfolio
-                    await supabase.from('portfolios').insert({
-                      user_id: user.id,
-                      name: 'Main Account',
-                      is_active: true,
-                      starting_balance: 0,
-                      current_balance: 0
-                    });
-                    
-                    toast({ title: "Factory Reset Complete", description: "Your journal has been completely wiped clean." });
-                    window.location.href = "/dashboard";
-                  }
-                }}>Factory Reset Journal</Button>
-              </CardContent>
-            </Card>
-
-            <Card className="border-loss/50 bg-loss/10 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
-              <CardHeader>
-                <CardTitle className="text-loss text-lg">Delete Account</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col justify-between gap-4 h-full">
-                <p className="text-sm text-text-muted">
-                  Permanently deletes your entire account, wiping all trade history, portfolio ledgers, custom playbooks, and authentication records from our servers.
-                </p>
-                <Button variant="destructive" className="w-full shadow-lg hover:shadow-xl transition-all" onClick={async () => {
-                  if(confirm("Are you absolutely sure you want to permanently delete your account and all data? This cannot be undone.")) {
-                    try {
-                      const res = await fetch('/api/delete-account', { method: 'POST' });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || "Failed to delete account. Ensure SUPABASE_SERVICE_ROLE_KEY is set in Vercel.");
-                      
-                      await supabase.auth.signOut();
-                      window.location.href = "/register";
-                    } catch (error) {
-                      toast({ title: "Deletion Failed", description: error.message, variant: "destructive" });
-                    }
-                  }
-                }}>Permanently Delete Account</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
+        
       </div>
     </AppLayout>
   );
