@@ -385,7 +385,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       const tradeData = {
         ...data,
         user_id: user.id,
-        portfolio_id: (await supabase.from("portfolios").select("id").eq("user_id", user.id).eq("is_active", true).single()).data?.id,
+        portfolio_id: activePort.id,
         session: sessionDetected,
         risk_amount_usd: riskAmount,
         gross_pnl,
@@ -407,7 +407,14 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       
       router.push('/trades');
     } catch (error: unknown) {
-      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+      const err = error as Error;
+      console.error("SMART DEBUG [Form Submit]:", err);
+      toast({ 
+        title: "Submission Error", 
+        description: `${err.message}. Check browser console for full stack trace.`, 
+        variant: "destructive",
+        duration: 10000 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -451,7 +458,17 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-20 max-w-4xl mx-auto">
+      <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+        console.error(errors);
+        const errorMessages = Object.keys(errors).map(key => `${key}: ${errors[key as keyof typeof errors]?.message}`).join(', ');
+      console.error("SMART DEBUG [Validation]:", errors);
+      toast({ 
+        title: "Validation Failed", 
+        description: errorMessages || "Please check all fields.", 
+        variant: "destructive",
+        duration: 10000
+      });
+      })} className="space-y-6 pb-20 max-w-4xl mx-auto">
         
         {/* Section 1: Core Setup */}
         <Card className="border-border/50 shadow-sm overflow-hidden bg-background">
