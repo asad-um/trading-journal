@@ -28,7 +28,8 @@ export default function DashboardPage() {
       if (!user) { setIsLoading(false); return; }
 
       // 1. Get the currently active portfolio
-      const { data: activePort } = await supabase.from('portfolios').select('*').eq('user_id', user.id).eq('is_active', true).single();
+      const { data: activePorts } = await supabase.from('portfolios').select('*').eq('user_id', user.id).eq('is_active', true).limit(1);
+      const activePort = activePorts?.[0];
       
       if (!activePort) {
         setProfile(null);

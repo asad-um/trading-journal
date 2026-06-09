@@ -27,7 +27,8 @@ export default function TradesPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setIsLoading(false); return; }
   
-      const { data: activePortfolio } = await supabase.from('portfolios').select('id').eq('user_id', user.id).eq('is_active', true).single();
+      const { data: activePorts } = await supabase.from('portfolios').select('id').eq('user_id', user.id).eq('is_active', true).limit(1);
+      const activePortfolio = activePorts?.[0];
       
       if (!activePortfolio) {
         setTrades([]);

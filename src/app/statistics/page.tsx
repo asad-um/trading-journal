@@ -23,7 +23,8 @@ export default function StatisticsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setIsLoading(false); return; }
 
-      const { data: activePortfolio } = await supabase.from('portfolios').select('*').eq('user_id', user.id).eq('is_active', true).single();
+      const { data: activePorts } = await supabase.from('portfolios').select('*').eq('user_id', user.id).eq('is_active', true).limit(1);
+      const activePortfolio = activePorts?.[0];
       if (!activePortfolio) { setIsLoading(false); return; }
 
       const [profRes, tradesRes] = await Promise.all([

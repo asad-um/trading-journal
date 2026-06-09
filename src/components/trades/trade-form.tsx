@@ -95,7 +95,8 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setIsLoading(false); return; }
       
-      const { data: activePort } = await supabase.from('portfolios').select('*').eq('user_id', user.id).eq('is_active', true).single();
+      const { data: activePorts } = await supabase.from('portfolios').select('*').eq('user_id', user.id).eq('is_active', true).limit(1);
+      const activePort = activePorts?.[0];
       
       if (!activePort) {
         setProfile(null);
@@ -351,7 +352,8 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const { data: activePort } = await supabase.from('portfolios').select('id').eq('user_id', user.id).eq('is_active', true).single();
+      const { data: activePorts } = await supabase.from('portfolios').select('id').eq('user_id', user.id).eq('is_active', true).limit(1);
+      const activePort = activePorts?.[0];
       if (!activePort) throw new Error("No active account selected. Please select one in the sidebar.");
 
       const sessionDetected = detectSession(data.trade_time_utc || "14:30");
