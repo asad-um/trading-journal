@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle,  } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UploadCloud, X, Zap, CheckCircle2,  } from "lucide-react";
+import { Loader2, UploadCloud, X, Zap, CheckCircle2, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
@@ -33,7 +33,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
   const { toast } = useToast();
 
   const form = useForm<TradeFormValues>({
-    resolver: zodResolver(tradeSchema) as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(tradeSchema) as any,
     defaultValues: initialData || {
       trade_date: format(new Date(), "yyyy-MM-dd"),
       trade_time_utc: "14:30",
@@ -111,7 +111,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                 form.reset(parsed);
                 toast({ title: "Draft Restored", description: "Your unsaved trade progress has been restored." });
               }
-            } catch {}
+            } catch (e) {}
           } else if (setRes.data.criteria_list) {
             form.setValue('criteria_checked', setRes.data.criteria_list.map((c: { id: string, label: string }) => ({
               id: c.id,
@@ -153,7 +153,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
 
   const getDynamicPresets = useCallback(() => {
     // Dynamic fallback structure. If user sets up custom stuff in settings, we can read it, but this is the robust core.
-    
+    const customList = settings?.strategies_list || [];
     
     // We maintain the hardcoded ones as a base overlay
     const base: Record<string, Record<string, string[]>> = {
@@ -174,21 +174,21 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     
     // Merge any custom DB strategies if we wanted to build that feature out further, but for now we supply the requested ones strictly.
     return base;
-  }, []);
+  }, [settings]);
 
   const applyStrategyCriteria = () => {
     if (!strategy || !sub_strategy) return;
     
     const presets = getDynamicPresets();
-    const specificCriteria = presets[strategy || ""]?.[sub_strategy] || [];
+    const specificCriteria = presets[strategy]?.[sub_strategy] || [];
     const newCriteria = [...specificCriteria, ...GLOBAL_CRITERIA].map((label, idx) => ({
-      id: `auto-${idx}`,
+      id: \`auto-\${idx}\`,
       label,
       checked: true
     }));
     
     replaceCriteria(newCriteria);
-    toast({ title: "Criteria Autofilled", description: `Applied checklist for ${sub_strategy}` });
+    toast({ title: "Criteria Autofilled", description: \`Applied checklist for \${sub_strategy}\` });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'pre' | 'post') => {
@@ -210,7 +210,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       formData.append('file', file);
       formData.append('upload_preset', uploadPreset);
 
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const response = await fetch(\`https://api.cloudinary.com/v1_1/\${cloudName}/image/upload\`, {
         method: 'POST',
         body: formData,
       });
@@ -243,7 +243,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     try {
       const tpSplitVal = validateTPSplits(data.tp_levels.map((tp: { position_percent: number }) => ({ positionPercent: tp.position_percent })));
       if (!tpSplitVal.valid && data.tp_levels.length > 0) {
-        toast({ title: "Validation Error", description: `TP position allocations must sum to exactly 100%. Currently: ${tpSplitVal.total}%`, variant: "destructive" });
+        toast({ title: "Validation Error", description: \`TP position allocations must sum to exactly 100%. Currently: \${tpSplitVal.total}%\`, variant: "destructive" });
         setIsSubmitting(false);
         return;
       }
@@ -362,14 +362,14 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                       <button 
                         type="button" 
                         onClick={() => field.onChange('Long')}
-                        className={`flex-1 py-2.5 rounded border font-semibold text-sm transition-colors \${field.value === 'Long' ? 'bg-win/10 border-win/50 text-win' : 'bg-transparent border-border text-text-muted hover:border-text-muted'}`}
+                        className={\`flex-1 py-2.5 rounded border font-semibold text-sm transition-colors \${field.value === 'Long' ? 'bg-win/10 border-win/50 text-win' : 'bg-transparent border-border text-text-muted hover:border-text-muted'}\`}
                       >
                         LONG
                       </button>
                       <button 
                         type="button" 
                         onClick={() => field.onChange('Short')}
-                        className={`flex-1 py-2.5 rounded border font-semibold text-sm transition-colors \${field.value === 'Short' ? 'bg-loss/10 border-loss/50 text-loss' : 'bg-transparent border-border text-text-muted hover:border-text-muted'}`}
+                        className={\`flex-1 py-2.5 rounded border font-semibold text-sm transition-colors \${field.value === 'Short' ? 'bg-loss/10 border-loss/50 text-loss' : 'bg-transparent border-border text-text-muted hover:border-text-muted'}\`}
                       >
                         SHORT
                       </button>
@@ -436,7 +436,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Select Sub-Strategy" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {(presets[strategy || ""] ? Object.keys(presets[strategy || ""]) : []).map(sub => (
+                      {(presets[strategy] ? Object.keys(presets[strategy]) : []).map(sub => (
                         <SelectItem key={sub} value={sub}>{sub}</SelectItem>
                       ))}
                       <SelectItem value="Other">Other / Custom</SelectItem>
@@ -454,19 +454,19 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                 <AccordionContent className="px-4 pb-4 pt-2">
                   <div className="flex justify-between items-center mb-4">
                     <p className="text-xs text-text-muted">Check off the criteria that validated this trade.</p>
-                    <Button type="button" variant="secondary" size="sm" onClick={applyStrategyCriteria} disabled={!presets[strategy || ""]?.[sub_strategy || ""]}>
+                    <Button type="button" variant="secondary" size="sm" onClick={applyStrategyCriteria} disabled={!presets[strategy]?.[sub_strategy]}>
                       <Zap className="h-3 w-3 mr-2 text-accent" /> Auto-fill {sub_strategy || 'Criteria'}
                     </Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {criteriaFields.map((field) => (
+                    {criteriaFields.map((field, index) => (
                       <div key={field.id} className="flex items-center space-x-2 bg-background p-2.5 rounded-md border border-border/50">
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
-                          {...form.register(`criteria_checked.\${index}.checked`)}
+                          {...form.register(\`criteria_checked.\${index}.checked\`)}
                         />
-                        <span className="text-sm">{form.getValues(`criteria_checked.\${index}.label`)}</span>
+                        <span className="text-sm">{form.getValues(\`criteria_checked.\${index}.label\`)}</span>
                       </div>
                     ))}
                     {criteriaFields.length === 0 && (
@@ -492,7 +492,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-text-secondary">Pre-Trade Setups</h3>
                 <div className="relative">
-                  <Input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={() => handleImageUpload(e, 'pre')} disabled={isUploadingPre} />
+                  <Input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'pre')} disabled={isUploadingPre} />
                   <Button type="button" variant="outline" size="sm" disabled={isUploadingPre} className="h-8">
                     {isUploadingPre ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <UploadCloud className="h-3 w-3 mr-2" />}
                     Upload Image
@@ -515,7 +515,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-text-secondary">Post-Trade Results</h3>
                 <div className="relative">
-                  <Input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={() => handleImageUpload(e, 'post')} disabled={isUploadingPost} />
+                  <Input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'post')} disabled={isUploadingPost} />
                   <Button type="button" variant="outline" size="sm" disabled={isUploadingPost} className="h-8">
                     {isUploadingPost ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <UploadCloud className="h-3 w-3 mr-2" />}
                     Upload Image
@@ -566,7 +566,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                     <button 
                       key={n} 
                       type="button" 
-                      className={`px-3 py-1 text-sm transition-colors ${num_tp_levels === n ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-background-tertiary'}`}
+                      className={\`px-3 py-1 text-sm transition-colors \${num_tp_levels === n ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-background-tertiary'}\`}
                       onClick={() => handleNumTpChange(n)}
                     >
                       {n}
@@ -576,7 +576,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
               </div>
               
               <div className="grid gap-3">
-                {tpFields.map((field) => {
+                {tpFields.map((field, index) => {
                   const entry = Number(entry_price || 0);
                   const sl = Number(stop_loss_price || 0);
                   const tpValue = Number(tp_levels?.[index]?.price || 0);
@@ -584,15 +584,15 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                   const rr = calculateRR(entry, sl, tpValue, dir) || 0;
                   
                   if (rr > 0 && tp_levels?.[index]?.rr !== rr) {
-                     form.setValue(`tp_levels.${index}.rr`, rr);
+                     form.setValue(\`tp_levels.\${index}.rr\`, rr);
                   }
 
                   return (
                     <div key={field.id} className="flex gap-4 items-end bg-background-secondary p-3 rounded-lg border border-border">
-                      <FormField control={form.control} name={`tp_levels.${index}.price`} render={({ field: f }) => (
+                      <FormField control={form.control} name={\`tp_levels.\${index}.price\`} render={({ field: f }) => (
                         <FormItem className="flex-1"><FormLabel className="text-xs">TP {index+1} Price</FormLabel><FormControl><Input type="number" step="any" className="h-9" {...f} /></FormControl></FormItem>
                       )} />
-                      <FormField control={form.control} name={`tp_levels.${index}.position_percent`} render={({ field: f }) => (
+                      <FormField control={form.control} name={\`tp_levels.\${index}.position_percent\`} render={({ field: f }) => (
                         <FormItem className="w-20"><FormLabel className="text-xs">Close %</FormLabel><FormControl><Input type="number" className="h-9" {...f} /></FormControl></FormItem>
                       )} />
                       <div className="w-24 pb-1.5 flex justify-end">
