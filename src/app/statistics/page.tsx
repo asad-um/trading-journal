@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { AppLayout } from "@/components/layout/app-layout";
 import { supabase } from "@/lib/supabase";
 import { Trade, Profile } from "@/types";
 import { calculateWinRate, calculateProfitFactor, calculateMaxDrawdown } from "@/lib/calculations";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, AreaChart, Area } from "recharts";
 import { format } from "date-fns";
 import { InfoTooltip } from "@/components/info-tooltip";
@@ -19,7 +20,7 @@ export default function StatisticsPage() {
   const { blurMoney } = usePrivacy();
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchData(silent: boolean = false) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setIsLoading(false); return; }
 
@@ -146,7 +147,11 @@ export default function StatisticsPage() {
     });
     const rrEfficiency = totalPlannedRR > 0 ? (totalActualRR / totalPlannedRR) * 100 : 0;
 
-    return { wr, pf, dd, grossPnL, netPnL, totalFees, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency };
+    
+    const bestTrades = [...closed].sort((a, b) => b.net_pnl - a.net_pnl).slice(0, 5);
+    const worstTrades = [...closed].sort((a, b) => a.net_pnl - b.net_pnl).slice(0, 5);
+
+    return { wr, pf, dd, grossPnL, netPnL, totalFees, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency, bestTrades, worstTrades };
   }, [profile, trades]);
 
   if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
@@ -155,7 +160,7 @@ export default function StatisticsPage() {
     <AppLayout>
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 pb-20 w-full animate-in fade-in duration-500">
         <div className="flex flex-col space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Advanced Statistics</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Statistics</h1>
           <p className="text-text-muted">Analyze your trading performance and edge.</p>
         </div>
         
@@ -184,7 +189,7 @@ export default function StatisticsPage() {
                           ]}
                           cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value"
                           stroke="none"
-                          cornerRadius={4}
+                          cornerRadius={8}
                         >
                           {
                             [
@@ -295,7 +300,7 @@ export default function StatisticsPage() {
                             contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
                             formatter={(val: any) => [`${Number(val || 0).toFixed(2)}%`, 'Drawdown']}
                           />
-                          <Area type="step" dataKey="drawdownPercent" stroke="hsl(0, 84%, 60%)" fillOpacity={1} fill="url(#colorDd)" />
+                          <Area type="monotone" dataKey="drawdownPercent" stroke="hsl(0, 84%, 60%)" fillOpacity={1} fill="url(#colorDd)" />
                         </AreaChart>
                       </ResponsiveContainer>
                     )}
@@ -305,7 +310,7 @@ export default function StatisticsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Time of Day Heatmap (UTC)</CardTitle>
+                  <CardTitle>Time of Day Heatmap</CardTitle>
                   <CardDescription>Identifying your most profitable trading windows.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -386,6 +391,78 @@ export default function StatisticsPage() {
               </Card>
             </div>
 
+            {/* Notable Trades References */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+              <Card className="border-border/60 shadow-sm bg-background">
+                <CardHeader>
+                  <CardTitle className="text-win flex items-center gap-2">Top 5 Best Trades</CardTitle>
+                  <CardDescription>Your most profitable setups contributing to your edge.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border/50">
+                    {stats.bestTrades.length === 0 ? (
+                      <p className="p-4 text-center text-sm text-text-muted">No winning trades yet.</p>
+                    ) : (
+                      stats.bestTrades.map((t: any, i: number) => (
+                        <div key={t.id} className="flex justify-between items-center p-4 hover:bg-background-secondary/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <span className="text-text-muted font-mono text-xs">#{i+1}</span>
+                            <div>
+                              <p className="font-bold text-sm">{t.symbol} <span className="text-text-muted font-normal text-xs ml-1">{t.direction}</span></p>
+                              <p className="text-xs text-text-muted mt-0.5">{format(new Date(t.trade_date), "MMM dd")} • {t.strategy || t.schematic}</p>
+                            </div>
+                          </div>
+                          <div className="text-right flex items-center gap-3">
+                            <div>
+                              <p className="font-mono text-sm font-bold text-win">+{blurMoney(t.net_pnl)}</p>
+                              <p className="text-xs text-text-muted font-mono">{t.actual_rr_achieved ? t.actual_rr_achieved.toFixed(2) : '0.00'}R</p>
+                            </div>
+                            <Link href={`/trades/${t.id}`} className="p-2 hover:bg-background rounded-full transition-colors">
+                              <ArrowRight className="h-4 w-4 text-text-muted" />
+                            </Link>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 shadow-sm bg-background">
+                <CardHeader>
+                  <CardTitle className="text-loss flex items-center gap-2">Top 5 Worst Trades</CardTitle>
+                  <CardDescription>Your heaviest losses. Review these for discipline leaks.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border/50">
+                    {stats.worstTrades.length === 0 ? (
+                      <p className="p-4 text-center text-sm text-text-muted">No losing trades yet.</p>
+                    ) : (
+                      stats.worstTrades.map((t: any, i: number) => (
+                        <div key={t.id} className="flex justify-between items-center p-4 hover:bg-background-secondary/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <span className="text-text-muted font-mono text-xs">#{i+1}</span>
+                            <div>
+                              <p className="font-bold text-sm">{t.symbol} <span className="text-text-muted font-normal text-xs ml-1">{t.direction}</span></p>
+                              <p className="text-xs text-text-muted mt-0.5">{format(new Date(t.trade_date), "MMM dd")} • {t.mistake_category || 'No mistake logged'}</p>
+                            </div>
+                          </div>
+                          <div className="text-right flex items-center gap-3">
+                            <div>
+                              <p className="font-mono text-sm font-bold text-loss">-{blurMoney(Math.abs(t.net_pnl))}</p>
+                              <p className="text-xs text-text-muted font-mono">{t.actual_rr_achieved ? t.actual_rr_achieved.toFixed(2) : '0.00'}R</p>
+                            </div>
+                            <Link href={`/trades/${t.id}`} className="p-2 hover:bg-background rounded-full transition-colors">
+                              <ArrowRight className="h-4 w-4 text-text-muted" />
+                            </Link>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </div>
