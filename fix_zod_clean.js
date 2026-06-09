@@ -1,4 +1,32 @@
-import * as z from "zod";
+const fs = require('fs');
+
+let validations = fs.readFileSync('src/lib/validations/trade.ts', 'utf8');
+
+// The issue persists because `.min(0)` was also chained outside the preprocess.
+// We need to write the preprocess correctly so the inner z.number() handles the restrictions.
+
+const oldPre = `z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number())`;
+
+const newPrePos = `z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number().min(0))`;
+
+const newPrePct = `z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  return Number(val);
+}, z.number().min(0).max(100))`;
+
+validations = validations.replace(oldPre + '.min(0)', newPrePos);
+validations = validations.replace(oldPre + '.min(1).max(100)', newPrePct);
+
+// For rr and potential_pnl that have no trailing chains, just use the oldPre string
+// But there might be other instances. Let's just manually rebuild the exact schema properties that are failing.
+
+const fallbackSchema = `import * as z from "zod";
 
 export const tpLevelSchema = z.object({
   level: z.number(),
@@ -41,7 +69,6 @@ export const tradeSchema = z.object({
   status: z.enum(['Open', 'Partial', 'Closed - Win', 'Closed - Loss', 'Breakeven', 'Cancelled']).default('Open'),
   breakeven_price: z.preprocess((val) => val === "" || val == null ? 0 : Number(val), z.number().optional()),
   tps_hit: z.array(z.number()).default([]),
-  sl_hit: z.boolean().default(false),
   analysis_platform: z.string().default('TradingView'),
   execution_platform: z.string().default('CTrader'),
   broker: z.string().optional(),
@@ -56,3 +83,7 @@ export const tradeSchema = z.object({
 });
 
 export type TradeFormValues = z.infer<typeof tradeSchema>;
+`;
+
+fs.writeFileSync('src/lib/validations/trade.ts', fallbackSchema);
+

@@ -46,7 +46,7 @@ export default function RegisterPage() {
         return;
       }
 
-      toast({ title: "Welcome!", description: "Your account has been created and defaults seeded." });
+      toast({ title: "Account Created", description: "Your account is ready. Please check your email to verify your registration." });
       router.push("/dashboard");
     } catch (error: unknown) {
       toast({ title: "Error", description: (error as Error)?.message || "An unexpected error occurred", variant: "destructive" });

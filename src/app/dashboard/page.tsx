@@ -46,7 +46,13 @@ export default function DashboardPage() {
       
       setIsLoading(false);
     }
-    fetchData();
+    
+      const channel = supabase.channel('realtime-page.tsx')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => fetchData(true))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); }
   }, []);
 
   const stats = useMemo(() => {
@@ -288,8 +294,8 @@ export default function DashboardPage() {
         <Card>
           <div className="p-4 border-b border-border">
             <Tabs defaultValue="recent" className="w-full">
-              <div className="flex justify-between items-center w-full">
-                <TabsList className="bg-background-tertiary">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-3 sm:gap-0">
+                <TabsList className="bg-background-tertiary flex-wrap h-auto">
                   <TabsTrigger value="recent" className="text-xs md:text-sm">Recent Activity</TabsTrigger>
                   <TabsTrigger value="open" className="text-xs md:text-sm relative">
                     Active Positions 

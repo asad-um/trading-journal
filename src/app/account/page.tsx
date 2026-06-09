@@ -37,11 +37,17 @@ export default function AccountPage() {
   const { blurMoney } = usePrivacy();
 
   useEffect(() => {
-    fetchData();
+    
+      const channel = supabase.channel('realtime-page.tsx')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'account_events' }, () => fetchData(true))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function fetchData() {
-    setIsLoading(true);
+  async function fetchData(silent: boolean = false) {
+    if (!silent) setIsLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setIsLoading(false); return; }
 

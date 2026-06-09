@@ -58,6 +58,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       status: "Open",
       criteria_checked: [],
       tps_hit: [],
+      sl_hit: false,
       pre_trade_images: [],
       post_trade_images: []
     }
@@ -84,6 +85,9 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
   const post_trade_images = useWatch({ control: form.control, name: "post_trade_images" });
   const strategy = useWatch({ control: form.control, name: "strategy" });
   const sub_strategy = useWatch({ control: form.control, name: "sub_strategy" });
+  const status = useWatch({ control: form.control, name: "status" });
+  const tps_hit = useWatch({ control: form.control, name: "tps_hit" });
+  const sl_hit = useWatch({ control: form.control, name: "sl_hit" });
 
   useEffect(() => {
     async function init() {
@@ -758,6 +762,57 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                 </Select>
               </FormItem>
             )} />
+
+            {(status === 'Partial' || status === 'Closed - Win' || status === 'Closed - Loss') && (
+              <div className="mt-6 pt-6 border-t border-border/50 animate-in fade-in slide-in-from-top-4 duration-300">
+                <h3 className="text-sm font-semibold text-text-secondary mb-4 uppercase tracking-wide">Execution Results</h3>
+                <div className="space-y-6">
+                  
+                  <div>
+                    <Label className="text-sm font-medium mb-3 block">Which Targets Were Hit?</Label>
+                    <div className="flex flex-wrap gap-3">
+                      {tpFields.map(tp => (
+                        <div 
+                          key={tp.id}
+                          onClick={() => {
+                            const current = form.getValues('tps_hit') || [];
+                            if (current.includes(tp.level)) {
+                              form.setValue('tps_hit', current.filter((l: number) => l !== tp.level), { shouldDirty: true, shouldValidate: true });
+                            } else {
+                              form.setValue('tps_hit', [...current, tp.level].sort(), { shouldDirty: true, shouldValidate: true });
+                            }
+                          }}
+                          className={`px-4 py-2 border rounded-md cursor-pointer transition-all font-medium text-sm shadow-sm ${tps_hit?.includes(tp.level) ? 'bg-win text-white border-win ring-2 ring-win/30 scale-105' : 'bg-background hover:bg-background-tertiary border-border text-text-muted'}`}
+                        >
+                          TP {tp.level}
+                        </div>
+                      ))}
+                      {tpFields.length === 0 && <span className="text-sm text-text-muted italic">No TP levels set.</span>}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-background-secondary rounded-lg border border-border shadow-sm">
+                    <div>
+                      <Label htmlFor="sl-hit-toggle" className="text-sm font-semibold text-foreground">Stop Loss Hit?</Label>
+                      <p className="text-xs text-text-muted mt-1">Check this if the trade eventually reversed and stopped out.</p>
+                    </div>
+                    <FormField control={form.control} name="sl_hit" render={({ field }) => (
+                      <FormControl>
+                        <input 
+                          id="sl-hit-toggle" 
+                          type="checkbox" 
+                          className="h-6 w-6 rounded border-border bg-background text-loss focus:ring-loss focus:ring-offset-background cursor-pointer transition-all" 
+                          checked={field.value}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+                    )} />
+                  </div>
+
+                </div>
+              </div>
+            )}
+
           </CardContent>
         </Card>
 

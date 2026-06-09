@@ -34,7 +34,13 @@ export default function StatisticsPage() {
       if (tradesRes.data) setTrades(tradesRes.data);
       setIsLoading(false);
     }
-    fetchData();
+    
+      const channel = supabase.channel('realtime-page.tsx')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => fetchData(true))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); }
   }, []);
 
   const stats = useMemo(() => {
@@ -220,6 +226,12 @@ export default function StatisticsPage() {
                     <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Total Fees Drag <InfoTooltip text="Estimated total fees deducted from Gross P&L." /></p>
                     <p className="font-mono text-3xl tracking-tight font-black text-loss">
                       -{blurMoney(stats.totalFees)}
+                    </p>
+                  </div>
+                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
+                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">RR Efficiency <InfoTooltip text="Percentage of your Planned RR that you actually captured on winning trades." /></p>
+                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.rrEfficiency >= 80 ? "text-win" : stats.rrEfficiency >= 50 ? "text-breakeven" : "text-loss"}`}>
+                      {stats.rrEfficiency.toFixed(1)}%
                     </p>
                   </div>
                 </CardContent>
