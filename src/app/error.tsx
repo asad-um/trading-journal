@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Terminal, Copy, RefreshCcw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { AlertTriangle, RefreshCcw } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function GlobalError({
   error,
@@ -12,54 +12,50 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const { toast } = useToast();
+  const [isReported, setIsReported] = useState(false);
 
   useEffect(() => {
-    // We can also wire this to a database logger later if needed
-    console.error("SMART DEBUG LOGGER CAUGHT ERROR:", error);
+    const reportError = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        await fetch('/api/log-error', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user?.id,
+            error_name: error.name,
+            error_message: error.message,
+            error_stack: error.stack,
+            route: window.location.pathname
+          })
+        });
+        setIsReported(true);
+      } catch (e) {
+        console.error("Failed to log error to backend", e);
+      }
+    };
+    reportError();
   }, [error]);
-
-  const copyToClipboard = () => {
-    const debugLog = `
---- SMART DEBUG LOG ---
-Time: ${new Date().toISOString()}
-Message: ${error.message}
-Digest: ${error.digest || 'N/A'}
-Stack Trace: 
-${error.stack || 'No stack trace available.'}
------------------------
-`;
-    navigator.clipboard.writeText(debugLog);
-    toast({ title: "Copied to Clipboard", description: "Paste this log to your developer agent." });
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-background-secondary border border-loss/50 rounded-xl shadow-2xl overflow-hidden">
-        <div className="bg-loss/10 border-b border-loss/20 p-4 flex items-center gap-3">
-          <Terminal className="h-6 w-6 text-loss" />
-          <h2 className="text-xl font-bold text-loss">System Crash Intercepted</h2>
+      <div className="max-w-md w-full bg-background-secondary border border-border rounded-xl shadow-2xl p-8 text-center space-y-6">
+        <div className="w-16 h-16 bg-loss/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="h-8 w-8 text-loss" />
         </div>
         
-        <div className="p-6 space-y-4">
-          <p className="text-text-muted text-sm">
-            The application encountered an unexpected client-side exception. A detailed debugging log has been generated.
-          </p>
+        <h2 className="text-2xl font-bold text-foreground">Something went wrong</h2>
+        
+        <p className="text-text-muted text-sm leading-relaxed">
+          We encountered an unexpected error. 
+          {isReported 
+            ? " Our engineering team has been securely notified with the crash details." 
+            : " We are securely logging this issue to our backend..."}
+        </p>
 
-          <div className="bg-background p-4 rounded-lg border border-border font-mono text-xs overflow-x-auto text-text-secondary relative">
-            <p className="font-bold text-loss mb-2">{error.name}: {error.message}</p>
-            <pre className="whitespace-pre-wrap opacity-80">{error.stack}</pre>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Button onClick={copyToClipboard} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Copy className="mr-2 h-4 w-4" /> Copy Debug Log
-            </Button>
-            <Button onClick={() => reset()} variant="outline" className="flex-1">
-              <RefreshCcw className="mr-2 h-4 w-4" /> Attempt Recovery
-            </Button>
-          </div>
-        </div>
+        <Button onClick={() => reset()} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base font-semibold mt-4">
+          <RefreshCcw className="mr-2 h-5 w-5" /> Reload Page
+        </Button>
       </div>
     </div>
   );
