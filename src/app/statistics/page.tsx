@@ -47,7 +47,7 @@ export default function StatisticsPage() {
   }, []);
 
   const stats = useMemo(() => {
-    if (!profile || trades.length === 0) return null;
+    if (!profile || !trades || trades.length === 0) return null;
     
     const wr = calculateWinRate(trades);
     const pf = calculateProfitFactor(trades);
@@ -61,8 +61,8 @@ export default function StatisticsPage() {
     const wins = closed.filter(t => t.net_pnl > 0);
     const losses = closed.filter(t => t.net_pnl < 0);
     
-    const avgWin = wins.length > 0 ? wins.reduce((acc, t) => acc + t.net_pnl, 0) / wins.length : 0;
-    const avgLoss = losses.length > 0 ? losses.reduce((acc, t) => acc + t.net_pnl, 0) / losses.length : 0;
+    const avgWin = (wins || []).length > 0 ? wins.reduce((acc, t) => acc + t.net_pnl, 0) / wins.length : 0;
+    const avgLoss = (losses || []).length > 0 ? losses.reduce((acc, t) => acc + t.net_pnl, 0) / losses.length : 0;
     
     // Trade Expectancy = (Win Rate * Avg Win) - (Loss Rate * Avg Loss)
     const winRateDec = wr.winRate / 100;
@@ -119,7 +119,34 @@ export default function StatisticsPage() {
       .filter(c => c.total >= 1) // Filter out noise if needed
       .sort((a, b) => b.winRate - a.winRate);
 
-    return { wr, pf, dd, grossPnL, netPnL, totalFees, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance };
+
+    // Time of Day Analysis
+    const timeOfDayData = closed.map(t => {
+      const [hour] = t.trade_time_utc.split(':').map(Number);
+      return { hour, pnl: t.net_pnl, status: t.status };
+    });
+
+    // Drawdown Curve
+    let peak = profile.starting_balance;
+    let current = profile.starting_balance;
+    const drawdownData = closed.sort((a,b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()).map(t => {
+      current += t.net_pnl;
+      if (current > peak) peak = current;
+      const ddAmount = peak - current;
+      const ddPercent = peak > 0 ? (ddAmount / peak) * 100 : 0;
+      return { date: format(new Date(t.trade_date), "MMM dd"), drawdownPercent: -ddPercent };
+    });
+
+    // RR Efficiency: Actual Achieved RR / Planned RR
+    let totalActualRR = 0;
+    let totalPlannedRR = 0;
+    wins.forEach(t => {
+      totalActualRR += (t.actual_rr_achieved || 0);
+      totalPlannedRR += (t.weighted_avg_rr_planned || 0);
+    });
+    const rrEfficiency = totalPlannedRR > 0 ? (totalActualRR / totalPlannedRR) * 100 : 0;
+
+    return { wr, pf, dd, grossPnL, netPnL, totalFees, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency };
   }, [profile, trades]);
 
   if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
@@ -251,11 +278,11 @@ export default function StatisticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[250px] w-full">
-                    {stats.drawdownData.length === 0 ? (
+                    {(stats.drawdownData || []).length === 0 ? (
                       <div className="h-full flex items-center justify-center text-text-muted text-sm border-2 border-dashed border-border rounded-lg">No data</div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={stats.drawdownData}>
+                        <AreaChart data={stats.drawdownData || []}>
                           <defs>
                             <linearGradient id="colorDd" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.8}/>
@@ -283,7 +310,7 @@ export default function StatisticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[250px] w-full">
-                    {stats.timeOfDayData.length === 0 ? (
+                    {(stats.timeOfDayData || []).length === 0 ? (
                       <div className="h-full flex items-center justify-center text-text-muted text-sm border-2 border-dashed border-border rounded-lg">No data</div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
@@ -296,8 +323,8 @@ export default function StatisticsPage() {
                             contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
                             formatter={(value: any, name: string) => name === 'PnL' ? [`${blurMoney(value)}`, 'Net PnL'] : [value, name]}
                           />
-                          <Scatter data={stats.timeOfDayData.filter((t: any) => t.pnl > 0)} fill="hsl(142, 71%, 45%)" />
-                          <Scatter data={stats.timeOfDayData.filter((t: any) => t.pnl <= 0)} fill="hsl(0, 84%, 60%)" />
+                          <Scatter data={(stats.timeOfDayData || []).filter((t: any) => t.pnl > 0)} fill="hsl(142, 71%, 45%)" />
+                          <Scatter data={(stats.timeOfDayData || []).filter((t: any) => t.pnl <= 0)} fill="hsl(0, 84%, 60%)" />
                         </ScatterChart>
                       </ResponsiveContainer>
                     )}
@@ -314,7 +341,7 @@ export default function StatisticsPage() {
                   <CardDescription>Win rates based on your specific setups.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {stats.strategyPerformance.length === 0 ? (
+                  {(stats.strategyPerformance || []).length === 0 ? (
                     <p className="text-sm text-text-muted text-center py-4">No strategy data available.</p>
                   ) : (
                     stats.strategyPerformance.map((strat: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
@@ -339,7 +366,7 @@ export default function StatisticsPage() {
                   <CardDescription>How specific validations impact your win rate.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                  {stats.criteriaPerformance.length === 0 ? (
+                  {(stats.criteriaPerformance || []).length === 0 ? (
                     <p className="text-sm text-text-muted text-center py-4">No criteria data available.</p>
                   ) : (
                     stats.criteriaPerformance.map((crit: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
