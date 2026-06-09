@@ -3,7 +3,7 @@
 import { useAuth } from "@/components/auth-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, BarChart2, Wallet, Settings, LogOut, Plus, HelpCircle } from "lucide-react";
+import { LayoutDashboard, BookOpen, BarChart2, Wallet, Camera, Settings, LogOut, Plus, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -19,6 +19,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/trades", label: "Trades", icon: BookOpen },
   { href: "/statistics", label: "Statistics", icon: BarChart2 },
+  { href: "/playbook", label: "Playbook", icon: Camera },
   { href: "/account", label: "Account", icon: Wallet },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/help", label: "Help / Guides", icon: HelpCircle },

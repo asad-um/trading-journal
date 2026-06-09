@@ -15,15 +15,20 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InfoTooltip } from "@/components/info-tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedIn, setHasCheckedIn] = useState(false);
+  const [moodScore, setMoodScore] = useState(3);
+  const [disciplineScore, setDisciplineScore] = useState(3);
   const { blurMoney } = usePrivacy();
+  const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchData(silent: boolean = false) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setIsLoading(false); return; }
 
@@ -49,13 +54,36 @@ export default function DashboardPage() {
     }
     
       fetchData();
-      const channel = supabase.channel('realtime-page.tsx')
+      const channel = supabase.channel('realtime-dashboard')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => fetchData(true))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'account_events' }, () => fetchData(true))
         .subscribe();
 
       return () => { supabase.removeChannel(channel); }
   }, []);
+
+  
+  const handleDailyCheckin = async () => {
+    if (!profile) return;
+    const today = new Date().toISOString().split('T')[0];
+    const { error } = await supabase.from('daily_checkins').insert({
+      user_id: profile.id, // Using profile.id as user_id proxy since they map 1:1
+      checkin_date: today,
+      mood_score: moodScore,
+      discipline_score: disciplineScore
+    });
+    
+    if (!error) {
+      setHasCheckedIn(true);
+      // Let's trigger a subtle UI toast if tilt is detected
+      if (moodScore <= 2 && disciplineScore <= 2) {
+        toast({ title: "Tilt Warning", description: "Low mood and discipline detected. Statistically, you are at high risk of forced errors today. Trade small or step away.", variant: "destructive", duration: 10000 });
+      } else {
+        toast({ title: "Checked In", description: "Have a great trading session." });
+      }
+    }
+  };
 
   const stats = useMemo(() => {
     if (!profile) return null;
@@ -107,6 +135,63 @@ export default function DashboardPage() {
     const recentTrades = [...trades].sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime()).slice(0, 10);
     const openPositions = trades.filter(t => t.status === 'Open');
 
+
+    // --- Algorithmic Trading Coach (Smart Insights) ---
+    const insights: string[] = [];
+    
+    if (closed.length >= 5) {
+      // 1. Symbol Analysis
+      const symbolMap: Record<string, { wins: number, total: number, pnl: number }> = {};
+      closed.forEach(t => {
+        if (!symbolMap[t.symbol]) symbolMap[t.symbol] = { wins: 0, total: 0, pnl: 0 };
+        symbolMap[t.symbol].total++;
+        symbolMap[t.symbol].pnl += t.net_pnl;
+        if (t.net_pnl > 0) symbolMap[t.symbol].wins++;
+      });
+      
+      let bestSymbol = "";
+      let bestSymbolWR = 0;
+      let worstSymbol = "";
+      let worstSymbolWR = 100;
+      
+      Object.keys(symbolMap).forEach(sym => {
+        const data = symbolMap[sym];
+        if (data.total >= 3) {
+          const wr = (data.wins / data.total) * 100;
+          if (wr > bestSymbolWR && data.pnl > 0) { bestSymbolWR = wr; bestSymbol = sym; }
+          if (wr < worstSymbolWR && data.pnl < 0) { worstSymbolWR = wr; worstSymbol = sym; }
+        }
+      });
+      
+      if (bestSymbol) insights.push(`🔥 Strong Edge: You have a ${bestSymbolWR.toFixed(0)}% win rate on ${bestSymbol}. Focus on this asset.`);
+      if (worstSymbol) insights.push(`⚠️ Wealth Leak: You have a ${worstSymbolWR.toFixed(0)}% win rate on ${worstSymbol}. Consider dropping it.`);
+      
+      // 2. Day of Week Analysis
+      let fridayPnL = 0;
+      closed.forEach(t => {
+        if (new Date(t.trade_date).getDay() === 5) fridayPnL += t.net_pnl;
+      });
+      if (fridayPnL < 0) insights.push(`📉 Friday Bleed: Statistically, you lose money on Fridays. Size down or skip trading.`);
+      
+      // 3. Session Analysis
+      const sessionMap: Record<string, number> = {};
+      closed.forEach(t => {
+        if (!sessionMap[t.session]) sessionMap[t.session] = 0;
+        sessionMap[t.session] += t.net_pnl;
+      });
+      let bestSession = "";
+      let bestSessionPnL = -Infinity;
+      Object.keys(sessionMap).forEach(sess => {
+        if (sessionMap[sess] > bestSessionPnL) {
+          bestSessionPnL = sessionMap[sess];
+          bestSession = sess;
+        }
+      });
+      if (bestSessionPnL > 0) insights.push(`💡 Ideal Window: The ${bestSession} session is your most profitable (${bestSessionPnL > 0 ? "+" : ""}${blurMoney(bestSessionPnL)}).`);
+    }
+
+    if (insights.length === 0) insights.push("Log at least 5 closed trades to unlock Algorithmic Coach insights.");
+
     return { 
       floatingPnL, 
       winRateData, 
@@ -119,9 +204,10 @@ export default function DashboardPage() {
       cumulativePnlData, 
       volumeData,
       recentTrades, 
-      openPositions 
+      openPositions,
+      insights
     };
-  }, [profile, trades]);
+  }, [profile, trades, blurMoney]);
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
   if (!profile || !stats) {
@@ -231,6 +317,49 @@ export default function DashboardPage() {
           </Card>
         </div>
 
+        {/* Algorithmic Trading Coach */}
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center animate-in slide-in-from-top-4 fade-in duration-500">
+          <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+            <div className="p-2 bg-primary text-primary-foreground rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <h3 className="font-bold text-foreground uppercase tracking-wider text-sm">Smart Insights</h3>
+          </div>
+          <div className="w-full overflow-hidden relative">
+            {/* Simple fading carousel for insights */}
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none snap-x">
+              {stats.insights.map((insight: string, i: number) => (
+                <div key={i} className="shrink-0 snap-start bg-background/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-border/50 text-sm font-medium whitespace-nowrap">
+                  {insight}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Psychology Tracker */}
+        {!hasCheckedIn && (
+          <div className="bg-gradient-to-r from-accent/10 to-transparent border border-accent/30 rounded-xl p-4 flex flex-col md:flex-row justify-between items-center gap-4 animate-in slide-in-from-top-4 fade-in duration-500">
+            <div>
+              <h3 className="font-bold text-foreground">Daily Check-in</h3>
+              <p className="text-xs text-text-muted">How are you feeling before the session begins?</p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-6 w-full md:w-auto">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <span className="text-xs font-semibold text-text-secondary">Mood</span>
+                <input type="range" min="1" max="5" value={moodScore} onChange={(e) => setMoodScore(parseInt(e.target.value))} className="w-24 accent-primary" />
+                <span className="text-xs font-mono">{moodScore}/5</span>
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <span className="text-xs font-semibold text-text-secondary">Discipline</span>
+                <input type="range" min="1" max="5" value={disciplineScore} onChange={(e) => setDisciplineScore(parseInt(e.target.value))} className="w-24 accent-primary" />
+                <span className="text-xs font-mono">{disciplineScore}/5</span>
+              </div>
+              <Button size="sm" onClick={handleDailyCheckin} className="w-full sm:w-auto whitespace-nowrap">Check In</Button>
+            </div>
+          </div>
+        )}
+
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
@@ -283,7 +412,7 @@ export default function DashboardPage() {
                         contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
                         itemStyle={{ color: 'hsl(var(--popover-foreground))' }}
                       />
-                      <Bar dataKey="trades" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                      <Bar dataKey="trades" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} maxBarSize={40} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
