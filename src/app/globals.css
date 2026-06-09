@@ -75,7 +75,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-500 ease-in-out;
   }
   
   /* Adding some smooth modern scrollbars */
