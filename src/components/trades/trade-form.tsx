@@ -264,6 +264,16 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Strict Client-Side File Validation
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Invalid File", description: "Only image files (PNG, JPG, WebP) are allowed.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB Limit
+      toast({ title: "File Too Large", description: "Images must be under 5MB to conserve storage.", variant: "destructive" });
+      return;
+    }
+
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     
     if (!cloudName) {
@@ -782,14 +792,14 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                         <div 
                           key={tp.id}
                           onClick={() => {
-                            const current = form.getValues('tps_hit') || [];
+                            const current = Array.isArray(form.getValues('tps_hit')) ? form.getValues('tps_hit') : [];
                             if (current.includes(tp.level)) {
                               form.setValue('tps_hit', current.filter((l: number) => l !== tp.level), { shouldDirty: true, shouldValidate: true });
                             } else {
                               form.setValue('tps_hit', [...current, tp.level].sort(), { shouldDirty: true, shouldValidate: true });
                             }
                           }}
-                          className={`px-4 py-2 border rounded-md cursor-pointer transition-all font-medium text-sm shadow-sm ${tps_hit?.includes(tp.level) ? 'bg-win text-white border-win ring-2 ring-win/30 scale-105' : 'bg-background hover:bg-background-tertiary border-border text-text-muted'}`}
+                          className={`px-4 py-2 border rounded-md cursor-pointer transition-all font-medium text-sm shadow-sm ${(Array.isArray(tps_hit) ? tps_hit : []).includes(tp.level) ? 'bg-win text-white border-win ring-2 ring-win/30 scale-105' : 'bg-background hover:bg-background-tertiary border-border text-text-muted'}`}
                         >
                           TP {tp.level}
                         </div>

@@ -1,3 +1,4 @@
+"use client";
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Toggle } from '@/components/ui/toggle'
@@ -9,13 +10,20 @@ export function RichTextEditor({ value, onChange }: { value: string, onChange: (
     content: value || '',
     editorProps: {
       attributes: {
-        class: 'min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 prose dark:prose-invert max-w-none',
+        class: 'min-h-[40px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 prose dark:prose-invert max-w-none',
       },
     },
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
     },
   })
+
+  // Sync external value changes (e.g. when loading initialData)
+  React.useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value || '');
+    }
+  }, [value, editor]);
 
   if (!editor) return null
 
