@@ -241,14 +241,24 @@ export default function AccountPage() {
                   </div>
 
                   <div className="pt-4 border-t border-border/50">
-                    <Button 
-                      variant={p.is_active ? "default" : "ghost"} 
-                      className={`w-full justify-between font-semibold ${p.is_active ? '' : 'text-primary hover:text-primary hover:bg-primary/10'}`}
-                      onClick={() => !p.is_active && handleSwitchAccount(p.id)}
-                    >
-                      {p.is_active ? "Currently Active" : "Switch to Account"} 
-                      {!p.is_active && <ArrowRight className="h-4 w-4"/>}
-                    </Button>
+                    {p.is_active ? (
+                      <div className="flex gap-2">
+                        <Button className="flex-1 bg-win/10 text-win hover:bg-win/20 border border-win/20 hover:border-win/50 transition-all" onClick={() => openDialog('deposit')}>
+                          <ArrowUpRight className="h-4 w-4 mr-2" /> Deposit
+                        </Button>
+                        <Button className="flex-1 bg-loss/10 text-loss hover:bg-loss/20 border border-loss/20 hover:border-loss/50 transition-all" onClick={() => openDialog('withdrawal')}>
+                          <ArrowDownRight className="h-4 w-4 mr-2" /> Withdraw
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-between font-semibold text-primary hover:text-primary hover:bg-primary/10"
+                        onClick={() => handleSwitchAccount(p.id)}
+                      >
+                        Switch to Account <ArrowRight className="h-4 w-4"/>
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -274,17 +284,8 @@ export default function AccountPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                 <History className="h-6 w-6 text-primary" />
-                Ledger: {activePortfolio.name}
+                Transaction Ledger
               </h2>
-              <div className="flex bg-background-secondary p-1 rounded-lg border border-border/50">
-                <Button size="sm" variant="ghost" className="text-win hover:bg-win/10 hover:text-win" onClick={() => openDialog('deposit')}>
-                  <ArrowUpRight className="h-4 w-4 mr-2" /> Deposit
-                </Button>
-                <div className="w-[1px] bg-border my-1 mx-1"></div>
-                <Button size="sm" variant="ghost" className="text-loss hover:bg-loss/10 hover:text-loss" onClick={() => openDialog('withdrawal')}>
-                  <ArrowDownRight className="h-4 w-4 mr-2" /> Withdraw
-                </Button>
-              </div>
             </div>
 
             <Card className="border-border/50 shadow-sm bg-background overflow-hidden">

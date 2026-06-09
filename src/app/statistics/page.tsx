@@ -176,7 +176,7 @@ export default function StatisticsPage() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-4xl font-black text-foreground drop-shadow-md">{stats.wr.winRate.toFixed(0)}%</span>
+                      <span className="text-4xl font-black text-foreground drop-shadow-md">{(stats.wr.winRate || 0).toFixed(0)}%</span>
                       <span className="text-[10px] uppercase tracking-widest text-text-muted mt-1 font-semibold">Win Rate</span>
                     </div>
                   </div>
@@ -204,7 +204,7 @@ export default function StatisticsPage() {
                   <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
                     <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Profit Factor <InfoTooltip text="Gross Profit / Gross Loss" /></p>
                     <p className={`font-mono text-3xl tracking-tight font-black ${stats.pf >= 1.5 ? "text-win" : "text-foreground"}`}>
-                      {stats.pf === Infinity ? '∞' : stats.pf.toFixed(2)}
+                      {stats.pf === Infinity ? '∞' : (stats.pf || 0).toFixed(2)}
                     </p>
                   </div>
                   <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
@@ -216,7 +216,7 @@ export default function StatisticsPage() {
                   <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
                     <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Recovery Factor <InfoTooltip text="Net Profit / Max Drawdown. Higher means better bounce-back ability." /></p>
                     <p className={`font-mono text-3xl tracking-tight font-black ${stats.recoveryFactor > 2 ? "text-win" : "text-foreground"}`}>
-                      {stats.recoveryFactor.toFixed(2)}
+                      {(stats.recoveryFactor || 0).toFixed(2)}
                     </p>
                   </div>
                   <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
@@ -234,7 +234,7 @@ export default function StatisticsPage() {
                   <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
                     <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">RR Efficiency <InfoTooltip text="Percentage of your Planned RR that you actually captured on winning trades." /></p>
                     <p className={`font-mono text-3xl tracking-tight font-black ${stats.rrEfficiency >= 80 ? "text-win" : stats.rrEfficiency >= 50 ? "text-breakeven" : "text-loss"}`}>
-                      {stats.rrEfficiency.toFixed(1)}%
+                      {(stats.rrEfficiency || 0).toFixed(1)}%
                     </p>
                   </div>
                 </CardContent>
@@ -263,10 +263,10 @@ export default function StatisticsPage() {
                             </linearGradient>
                           </defs>
                           <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v: any) => `${Number(v).toFixed(0)}%`} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v: any) => `${Number(v || 0).toFixed(0)}%`} />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                            formatter={(val: any) => [`${Number(val).toFixed(2)}%`, 'Drawdown']}
+                            formatter={(val: any) => [`${Number(val || 0).toFixed(2)}%`, 'Drawdown']}
                           />
                           <Area type="step" dataKey="drawdownPercent" stroke="hsl(0, 84%, 60%)" fillOpacity={1} fill="url(#colorDd)" />
                         </AreaChart>
@@ -324,7 +324,7 @@ export default function StatisticsPage() {
                           <p className="text-xs text-text-muted mt-1">{strat.total} trades</p>
                         </div>
                         <div className="text-right">
-                          <p className={`font-bold ${strat.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{strat.winRate.toFixed(1)}%</p>
+                          <p className={`font-bold ${strat.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(strat.winRate || 0).toFixed(1)}%</p>
                           <p className={`text-xs font-mono mt-1 ${strat.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{strat.netPnL > 0 ? "+" : ""}{blurMoney(strat.netPnL)}</p>
                         </div>
                       </div>
@@ -349,7 +349,7 @@ export default function StatisticsPage() {
                           <p className="text-xs text-text-muted mt-1">Present in {crit.total} trades</p>
                         </div>
                         <div className="text-right">
-                          <p className={`font-bold ${crit.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{crit.winRate.toFixed(1)}%</p>
+                          <p className={`font-bold ${crit.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(crit.winRate || 0).toFixed(1)}%</p>
                           <p className={`text-xs font-mono mt-1 ${crit.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{crit.netPnL > 0 ? "+" : ""}{blurMoney(crit.netPnL)}</p>
                         </div>
                       </div>

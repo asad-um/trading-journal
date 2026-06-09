@@ -822,15 +822,17 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                       <p className="text-xs text-text-muted mt-1">Check this if the trade eventually reversed and stopped out.</p>
                     </div>
                     <FormField control={form.control} name="sl_hit" render={({ field }) => (
-                      <FormControl>
-                        <input 
-                          id="sl-hit-toggle" 
-                          type="checkbox" 
-                          className="h-6 w-6 rounded border-border bg-background text-loss focus:ring-loss focus:ring-offset-background cursor-pointer transition-all" 
-                          checked={field.value}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
+                      <FormItem className="flex items-center space-y-0">
+                        <FormControl>
+                          <input 
+                            id="sl-hit-toggle" 
+                            type="checkbox" 
+                            className="h-6 w-6 rounded border-border bg-background text-loss focus:ring-loss focus:ring-offset-background cursor-pointer transition-all" 
+                            checked={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
                     )} />
                   </div>
 
