@@ -4,35 +4,34 @@
 
 @layer base {
   :root {
-    /* Light Mode: Cool toned, crisp and modern */
-    --background: 210 20% 98%; /* Soft cool off-white */
-    --foreground: 220 30% 12%; /* Deep slate for text */
+    /* Light Mode: High-Contrast SaaS */
+    --background: 210 25% 97%; /* Very slight blue-tinted cool grey */
+    --foreground: 220 40% 10%; /* Almost black slate */
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 30% 12%;
+    --card: 0 0% 100%; /* Pure white cards so they pop against the background */
+    --card-foreground: 220 40% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 12%;
+    --popover-foreground: 220 40% 10%;
 
-    /* Cool blue accent for light mode */
-    --primary: 214 85% 55%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 220 90% 50%; /* Deep electric blue */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 20% 90%;
-    --secondary-foreground: 220 30% 12%;
+    --secondary: 214 20% 92%; /* Slightly darker grey for secondary inputs */
+    --secondary-foreground: 220 40% 10%;
 
-    --muted: 214 20% 90%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 214 20% 92%;
+    --muted-foreground: 215 16% 40%; /* Darker muted text for readability */
 
-    --accent: 214 85% 55%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 220 90% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 85%;
-    --input: 214 20% 85%;
-    --ring: 214 85% 55%;
+    --border: 214 20% 82%; /* Darker borders to frame components clearly */
+    --input: 214 20% 82%;
+    --ring: 220 90% 50%;
 
     --radius: 0.75rem; /* Modern rounded corners */
   }
