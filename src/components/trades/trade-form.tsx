@@ -774,7 +774,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
           <CardContent>
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl><SelectTrigger className="h-12 font-medium"><SelectValue placeholder="Status" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="Open">Open (Floating)</SelectItem>
