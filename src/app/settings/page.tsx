@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useTheme } from "next-themes";
 import { Loader2, Download, Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -18,7 +17,6 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
 
   // Temporary states for new list items
   const [newItemInputs, setNewItemInputs] = useState<Record<string, string>>({});
@@ -46,7 +44,7 @@ export default function SettingsPage() {
     if (!profile) return;
     const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", profile.id);
     if (error) {
-      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setProfile({ ...profile, [field]: value as never });
       toast({ title: "Saved", description: "Profile setting updated successfully." });
@@ -57,7 +55,7 @@ export default function SettingsPage() {
     if (!settings) return;
     const { error } = await supabase.from("user_settings").update({ [listName]: newList }).eq("id", settings.id);
     if (error) {
-      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setSettings({ ...settings, [listName]: newList as never });
       toast({ title: "Saved", description: "List updated successfully." });
@@ -130,7 +128,7 @@ export default function SettingsPage() {
     if (!profile) return;
     const { data, error } = await supabase.from("trades").select("*").eq("user_id", profile.id);
     if (error) {
-      toast({ title: "Export Error", description: (error as Error).message, variant: "destructive" });
+      toast({ title: "Export Error", description: error.message, variant: "destructive" });
       return;
     }
     
@@ -154,196 +152,50 @@ export default function SettingsPage() {
   return (
     <AppLayout>
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 pb-20 w-full">
-        <div className="flex flex-col space-y-1 mb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-          <p className="text-text-muted">Manage your workspace preferences, playbooks, and exports.</p>
-        </div>
+        <h1 className="text-2xl font-bold">Settings</h1>
         
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="bg-transparent border-b border-border w-full justify-start rounded-none h-auto p-0 space-x-8 overflow-x-auto flex-nowrap md:flex-wrap">
-            <TabsTrigger value="general" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">General</TabsTrigger>
-            <TabsTrigger value="strategies" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Playbooks</TabsTrigger>
-            <TabsTrigger value="lists" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Checklists</TabsTrigger>
-            <TabsTrigger value="assets" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Assets & Platforms</TabsTrigger>
-            <TabsTrigger value="export" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 px-1 font-medium text-text-muted data-[state=active]:text-foreground whitespace-nowrap">Data Export</TabsTrigger>
+        <Tabs defaultValue="preferences" className="w-full">
+          <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b border-border rounded-none p-0 h-auto flex-wrap">
+            <TabsTrigger value="preferences" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent rounded-none pb-2">Preferences</TabsTrigger>
+            <TabsTrigger value="lists" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent rounded-none pb-2">Lists & Categories</TabsTrigger>
+            <TabsTrigger value="assets" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent rounded-none pb-2">Assets & Platforms</TabsTrigger>
+            <TabsTrigger value="export" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent rounded-none pb-2">Export Data</TabsTrigger>
+            <TabsTrigger value="danger" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent rounded-none pb-2 text-loss data-[state=active]:text-loss">Danger Zone</TabsTrigger>
           </TabsList>
           
           {/* TAB 1: Preferences */}
-          <TabsContent value="general" className="space-y-8 pt-4 outline-none">
-            <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Trade Preferences</CardTitle>
-                <CardDescription>Default settings applied when you log a new trade.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-text-muted font-semibold">Default Risk (%)</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        type="number" 
-                        step="0.1" 
-                        value={profile?.default_risk_percentage || 0} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, default_risk_percentage: parseFloat(e.target.value) } : null)}
-                        className="bg-background-secondary border-border/50 focus-visible:ring-primary/50"
-                      />
-                      <Button variant="secondary" onClick={() => handleUpdateProfile('default_risk_percentage', profile?.default_risk_percentage || 0)}>Save</Button>
-                    </div>
-                    <p className="text-xs text-text-muted">Calculates risk amount automatically based on your active portfolio balance.</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-text-muted font-semibold">Display Currency</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        type="text" 
-                        value={profile?.currency || 'USD'} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, currency: e.target.value } : null)}
-                        className="bg-background-secondary border-border/50 focus-visible:ring-primary/50 uppercase"
-                      />
-                      <Button variant="secondary" onClick={() => handleUpdateProfile('currency', profile?.currency || 'USD')}>Save</Button>
-                    </div>
-                    <p className="text-xs text-text-muted">Visual label only (e.g. USD, EUR, GBP).</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Appearance</CardTitle>
-                <CardDescription>Customize the interface theme.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-4">
-                  <Button 
-                    variant={theme === 'light' ? 'default' : 'outline'} 
-                    onClick={() => setTheme('light')}
-                    className={theme === 'light' ? 'bg-primary text-primary-foreground' : 'text-text-muted'}
-                  >
-                    Light Mode
-                  </Button>
-                  <Button 
-                    variant={theme === 'dark' ? 'default' : 'outline'} 
-                    onClick={() => setTheme('dark')}
-                    className={theme === 'dark' ? 'bg-primary text-primary-foreground' : 'text-text-muted'}
-                  >
-                    Dark Mode
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Danger Zone (Compact) */}
-        <div className="mt-12 pt-8 border-t border-border/50">
-          <Card className="border-loss/30 bg-loss/5 overflow-hidden">
-            <CardHeader className="bg-loss/10 border-b border-loss/20 pb-4">
-              <CardTitle className="text-loss text-lg flex items-center gap-2">
-                <Trash2 className="h-5 w-5" /> Danger Zone
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-loss/20">
-                {/* Reset Option */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-4 hover:bg-loss/5 transition-colors">
-                  <div>
-                    <h3 className="font-semibold text-foreground">Delete All Data (Factory Reset)</h3>
-                    <p className="text-xs text-text-muted mt-1 max-w-md">Wipes all trades, portfolios, and ledger events. Your login and custom strategies remain intact.</p>
-                  </div>
-                  <Button variant="outline" className="w-full sm:w-auto text-loss border-loss/50 hover:bg-loss hover:text-white transition-all whitespace-nowrap" onClick={async () => {
-                    if(confirm("Are you absolutely sure you want to Factory Reset your journal? This cannot be undone.")) {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) return;
-                      
-                      // Fetch all trades to garbage collect Cloudinary images
-                      const { data: trades } = await supabase.from('trades').select('pre_trade_images, post_trade_images').eq('user_id', user.id);
-                      if (trades) {
-                        const publicIds: string[] = [];
-                        trades.forEach(t => {
-                          (t.pre_trade_images || []).forEach((img: { public_id?: string }) => img.public_id && publicIds.push(img.public_id));
-                          (t.post_trade_images || []).forEach((img: { public_id?: string }) => img.public_id && publicIds.push(img.public_id));
-                        });
-                        if (publicIds.length > 0) {
-                          await fetch('/api/delete-images-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ public_ids: publicIds }) }).catch(console.error);
-                        }
-                      }
-
-                      // Delete all sub-data
-                      await Promise.all([
-                        supabase.from('trades').delete().eq('user_id', user.id),
-                        supabase.from('account_events').delete().eq('user_id', user.id),
-                        supabase.from('portfolios').delete().eq('user_id', user.id)
-                      ]);
-                      
-                      // Recreate default portfolio
-                      await supabase.from('portfolios').insert({
-                        user_id: user.id,
-                        name: 'Main Account',
-                        is_active: true,
-                        starting_balance: 0,
-                        current_balance: 0
-                      });
-                      
-                      toast({ title: "Factory Reset Complete", description: "Your journal has been completely wiped clean." });
-                      window.location.href = "/dashboard";
-                    }
-                  }}>Reset Data</Button>
-                </div>
-
-                {/* Delete Account Option */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-4 hover:bg-loss/10 transition-colors">
-                  <div>
-                    <h3 className="font-semibold text-loss">Permanently Delete Account</h3>
-                    <p className="text-xs text-text-muted mt-1 max-w-md">Deletes your login, authentication records, and wipes all data from our servers forever.</p>
-                  </div>
-                  <Button variant="destructive" className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all whitespace-nowrap" onClick={async () => {
-                    if(confirm("Are you absolutely sure you want to permanently delete your account and all data? This cannot be undone.")) {
-                      try {
-                        const res = await fetch('/api/delete-account', { method: 'POST' });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Failed to delete account. Ensure SUPABASE_SERVICE_ROLE_KEY is set in Vercel.");
-                        
-                        await supabase.auth.signOut();
-                        window.location.href = "/register";
-                      } catch (error: unknown) {
-                        toast({ title: "Deletion Failed", description: (error as Error).message, variant: "destructive" });
-                      }
-                    }
-                  }}>Delete Account</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-          </TabsContent>
-
-
-          {/* TAB 1.5: Strategies */}
-          <TabsContent value="strategies" className="space-y-6 pt-4">
+          <TabsContent value="preferences" className="space-y-6 pt-4">
             <Card>
               <CardHeader>
-                <CardTitle>Strategy Playbooks</CardTitle>
-                <CardDescription>Format: &quot;Strategy | Playbook&quot; (e.g. Wyckoff | Blue Box)</CardDescription>
+                <CardTitle>Account Preferences</CardTitle>
+                <CardDescription>Manage default risk, currency, and theme.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="Strategy | Sub-strategy..." 
-                    value={newItemInputs['strategies_list'] || ""}
-                    onChange={e => setNewItemInputs(p => ({...p, strategies_list: e.target.value}))}
-                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('strategies_list')}
-                  />
-                  <Button onClick={() => handleAddListItem('strategies_list')}><Plus className="h-4 w-4" /></Button>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Default Risk Percentage (%)</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="number" 
+                      step="0.1" 
+                      value={profile?.default_risk_percentage || 0} 
+                      onChange={(e) => setProfile(prev => prev ? { ...prev, default_risk_percentage: parseFloat(e.target.value) } : null)}
+                    />
+                    <Button onClick={() => handleUpdateProfile('default_risk_percentage', profile?.default_risk_percentage || 0)}>Save</Button>
+                  </div>
+                  <p className="text-xs text-text-muted">Used automatically when logging a new trade.</p>
                 </div>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                  {settings?.strategies_list?.map((item: { id?: string; label?: string; name?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }) => (
-                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
-                      <span className="text-sm font-semibold">{item.label || item.name}</span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('strategies_list', item.id || '')}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                
+                <div className="space-y-2">
+                  <Label>Display Currency</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="text" 
+                      value={profile?.currency || 'USD'} 
+                      onChange={(e) => setProfile(prev => prev ? { ...prev, currency: e.target.value } : null)}
+                    />
+                    <Button onClick={() => handleUpdateProfile('currency', profile?.currency || 'USD')}>Save</Button>
+                  </div>
+                  <p className="text-xs text-text-muted">Changes the currency label only (no conversion).</p>
                 </div>
               </CardContent>
             </Card>
@@ -543,11 +395,20 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
           
-
+          {/* TAB 5: Danger Zone */}
+          <TabsContent value="danger" className="pt-4">
+            <Card className="border-loss/50">
+              <CardHeader>
+                <CardTitle className="text-loss">Danger Zone</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-text-muted">Deleting your account is permanent. It will erase all your trades, account history, and settings.</p>
+                <Button variant="destructive" onClick={() => alert("Contact support to delete account.")}>Delete Account</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
         </Tabs>
-
-        
       </div>
     </AppLayout>
   );
