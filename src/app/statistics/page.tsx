@@ -160,8 +160,8 @@ export default function StatisticsPage() {
     <AppLayout>
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 pb-20 w-full animate-in fade-in duration-500">
         <div className="flex flex-col space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Statistics</h1>
-          <p className="text-text-muted">Analyze your trading performance and edge.</p>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-text-muted bg-clip-text text-transparent">Performance Analytics</h1>
+          <p className="text-text-muted">Data-driven insights into your trading edge and behavioral patterns.</p>
         </div>
         
         {!stats ? (
@@ -326,7 +326,7 @@ export default function StatisticsPage() {
                           <Tooltip 
                             cursor={{ strokeDasharray: '3 3' }}
                             contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                            formatter={(value: any, name: string) => name === 'PnL' ? [`${blurMoney(value)}`, 'Net PnL'] : [value, name]}
+                            formatter={(value: any, name: any) => name === 'PnL' ? [`${blurMoney(value)}`, 'Net PnL'] : [value, name]}
                           />
                           <Scatter data={(stats.timeOfDayData || []).filter((t: any) => t.pnl > 0)} fill="hsl(142, 71%, 45%)" />
                           <Scatter data={(stats.timeOfDayData || []).filter((t: any) => t.pnl <= 0)} fill="hsl(0, 84%, 60%)" />

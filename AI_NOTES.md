@@ -1,3 +1,6 @@
+git add .
+git commit -m "Updated project files"
+git push origin main
 # AI Notes — WJournal
 
 > Working notes for AI coding agents. Update as work progresses.

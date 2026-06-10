@@ -232,27 +232,70 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
   };
 
   const getDynamicPresets = useCallback(() => {
-    // Dynamic fallback structure. If user sets up custom stuff in settings, we can read it, but this is the robust core.
-    
-    
-    // We maintain the hardcoded ones as a base overlay
     const base: Record<string, Record<string, string[]>> = {
       "Wyckoff": {
         "Blue Box Strategy": ["NYSE Session Action", "Read Initial 5-10m Reaction", "Micro Accum/Dist", "Quick 1:5 RR Target"],
         "Spring/UTAD Strategy": ["Spring/UTAD Formed", "Volume Absorption", "BOOF (Break of Orderflow)", "Micro Schematic Mitigation", "Fib 50%-80% Retracement"],
-        "Classical Strategy": ["HTF Schematic (1H/15m/5m)", "HTF POI Mitigation", "In-line with Supply/Demand", "Micro Accum/Re-accum Entry", "Fib 50%-80% Retracement"]
+        "Classical Strategy": ["HTF Schematic (1H/15m/5m)", "HTF POI Mitigation", "In-line with Supply/Demand", "Micro Accum/Re-accum Entry", "Fib 50%-80% Retracement"],
+        "Re-accumulation Entry": ["Phase B Spring", "Test of Support", "Volume Dry-Up", "SOS Confirmation", "Back to Edge"],
+        "Re-distribution Entry": ["Phase B UT", "Test of Resistance", "Volume Climax", "SOW Confirmation", "Back to Edge"]
       },
       "SMC (Smart Money)": {
         "ChoCh Entry": ["HTF POI Mitigation", "Change of Character (ChoCh)", "Order Block (OB) Formation", "Return to OB"],
-        "Continuation": ["Break of Structure (BOS)", "Fair Value Gap (FVG)", "Displacement"]
+        "Continuation": ["Break of Structure (BOS)", "Fair Value Gap (FVG)", "Displacement"],
+        "Liquidity Sweep": ["Equal Highs/Lows", "Stop Hunt", "Reversal Structure", "OB Entry"],
+        "Breaker Block": ["Failed Order Block", "Momentum Shift", "Retest of Breaker", "Entry Confirmation"],
+        "Mitigation Block": ["Previous OB Test", "Price Rejection", "FVG Fill", "Continuation Entry"]
       },
       "ICT": {
         "Silver Bullet": ["Specific Time Window (10AM/2PM/3AM)", "FVG Formation", "Clear Draw on Liquidity"],
-        "2022 Model": ["Liquidity Sweep (Buyside/Sellside)", "Market Structure Shift (MSS)", "FVG Entry"]
+        "2022 Model": ["Liquidity Sweep (Buyside/Sellside)", "Market Structure Shift (MSS)", "FVG Entry"],
+        "Judas Swing": ["Asian Range", "London Sweep", "NY Reversal", "FVG Entry"],
+        "Killzone": ["London Open (3-5AM)", "NY Open (8:30-11AM)", "PM Session (2-4PM)", "High Probability Setup"],
+        "OTE (Optimal Trade Entry)": ["Fib 62%-79%", "Structure Alignment", "Discretionary Block", "Entry Confirmation"]
+      },
+      "Price Action": {
+        "Pin Bar": ["Rejection at Key Level", "Long Wick", "Body at Extreme", "Trend Continuation/Reversal"],
+        "Engulfing": ["Strong Momentum", "Body Engulfs Previous", "Level Confluence", "Volume Confirmation"],
+        "Inside Bar": ["Consolidation Break", "Mother Bar", "Directional Bias", "Breakout Entry"],
+        "Fakeout / Trap": ["False Break", "Quick Reversal", "Liquidity Grab", "Entry on Close Back"]
+      },
+      "Supply & Demand": {
+        "Fresh Zone": ["Strong Base", "Impulse Away", "Untested Zone", "First Retest Entry"],
+        "Reclaimed Zone": ["Previous Resistance", "Turned Support", "Volume on Break", "Retest Entry"],
+        "Drop-Base-Drop": ["Bearish Continuation", "Base Formation", "Impulse Down", "Entry on Break"],
+        "Rally-Base-Rally": ["Bullish Continuation", "Base Formation", "Impulse Up", "Entry on Break"]
+      },
+      "Trend Following": {
+        "Pullback Entry": ["Trend Identification", "Fib Retracement", "Moving Average Bounce", "Momentum Resumption"],
+        "Breakout Entry": ["Consolidation", "Volume Spike", "Clean Break", "Retest or Momentum"],
+        "Moving Average Cross": ["Golden Cross / Death Cross", "Trend Alignment", "Volume Confirmation", "Entry on Close"],
+        "Channel Trading": ["Parallel Lines", "Support/Resistance Bounce", "Middle Line Rejection", "Trend Continuation"]
+      },
+      "Mean Reversion": {
+        "Overbought/Oversold": ["RSI >70 or <30", "Divergence", "Key Level", "Reversal Candle"],
+        "Bollinger Band Reversal": ["Band Touch", "Band Squeeze", "Mean Reversion", "Volume Confirmation"],
+        "Range Bound": ["Clear Support", "Clear Resistance", "Midpoint Rejection", "Boundary Bounce"],
+        "Divergence Play": ["RSI Divergence", "MACD Divergence", "Price Action Confirmation", "Entry on Break"]
+      },
+      "Session Trading": {
+        "London Open": ["Asian Range", "Breakout/Breakdown", "Volume Increase", "Trend Setup"],
+        "NY Open": ["Pre-market Analysis", "Opening Range", "Momentum Play", "Trend Continuation"],
+        "London Close": ["Volume Drop", "Consolidation", "Reversal Setup", "Low Probability — Avoid"],
+        "Asian Session": ["Low Volatility", "Range Bound", "Setup for London", "Minimal Trades"]
+      },
+      "Multi-Timeframe": {
+        "Top-Down Analysis": ["Monthly/Weekly Bias", "Daily Structure", "4H Setup", "1H Entry"],
+        "HTF + LTF Confluence": ["HTF Order Block", "LTF ChoCh", "LTF FVG", "Precision Entry"],
+        "3-Timeframe Rule": ["Trend on HTF", "Structure on MTF", "Entry on LTF", "All Aligned"]
+      },
+      "Fundamental": {
+        "News Release": ["Economic Calendar", "High Impact Event", "Expected vs Actual", "Directional Bias"],
+        "Central Bank Play": ["FOMC / ECB / BOE", "Rate Decision", "Policy Statement", "Volatility Play"],
+        "Earnings Play": ["Earnings Report", "Guidance", "Pre-market Gap", "Directional Momentum"]
       }
     };
     
-    // Merge any custom DB strategies if we wanted to build that feature out further, but for now we supply the requested ones strictly.
     return base;
   }, []);
 
