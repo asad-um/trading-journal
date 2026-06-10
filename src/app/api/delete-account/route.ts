@@ -33,7 +33,8 @@ export async function POST(req: Request) {
 
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
-       return NextResponse.json({ error: "Server missing SUPABASE_SERVICE_ROLE_KEY" }, { status: 500 });
+       console.error("[delete-account] Service role key not configured");
+       return NextResponse.json({ error: "Account deletion service temporarily unavailable" }, { status: 503 });
     }
 
     // Initialize Admin Supabase Client to bypass RLS and delete the Auth User

@@ -301,7 +301,7 @@ export default function SettingsPage() {
                     try {
                       const res = await fetch('/api/delete-account', { method: 'POST' });
                       const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || "Failed to delete account. Ensure SUPABASE_SERVICE_ROLE_KEY is set in Vercel.");
+                      if (!res.ok) throw new Error(data.error || "Account deletion failed. Please contact support.");
                       
                       await supabase.auth.signOut();
                       window.location.href = "/register";
@@ -632,7 +632,7 @@ export default function SettingsPage() {
                     try {
                       const res = await fetch('/api/delete-account', { method: 'POST' });
                       const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || "Failed to delete account. Ensure SUPABASE_SERVICE_ROLE_KEY is set in Vercel.");
+                      if (!res.ok) throw new Error(data.error || "Account deletion failed. Please contact support.");
                       
                       await supabase.auth.signOut();
                       window.location.href = "/register";
