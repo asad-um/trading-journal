@@ -315,14 +315,140 @@ export default function SettingsPage() {
           </div>
         </div>
           </TabsContent>
+
+          {/* TAB 2: Strategies */}
+          <TabsContent value="strategies" className="space-y-6 pt-4">
+            <Card className="border-border/60 shadow-sm bg-background">
+              <CardHeader>
+                <CardTitle>Strategy Playbooks</CardTitle>
+                <CardDescription>Format: &quot;Strategy | Playbook&quot; (e.g. Wyckoff | Blue Box)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Strategy | Sub-strategy..." 
+                    value={newItemInputs['strategies_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, strategies_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('strategies_list')}
+                  />
+                  <Button onClick={() => handleAddListItem('strategies_list')}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.strategies_list?.map((item: any) => (
+                    <div key={item.id || item.label} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <span className="text-sm font-semibold">{item.label || item.name}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('strategies_list', item.id || "")}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Checklists */}
+          <TabsContent value="lists" className="space-y-6 pt-4">
+            <Card className="border-border/60 shadow-sm bg-background">
+              <CardHeader>
+                <CardTitle>Criteria Checklist</CardTitle>
+                <CardDescription>Manage your pre-trade confirmation criteria.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="New criterion..." 
+                    value={newItemInputs['criteria_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, criteria_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('criteria_list')}
+                  />
+                  <Button onClick={() => handleAddListItem('criteria_list')}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.criteria_list?.map((item: any) => (
+                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <span className="text-sm">{item.label}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('criteria_list', item.id || "")}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60 shadow-sm bg-background">
+              <CardHeader>
+                <CardTitle>Mistake Categories</CardTitle>
+                <CardDescription>Common mistakes you make (used for journaling discipline).</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="New mistake category..." 
+                    value={newItemInputs['mistake_categories_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, mistake_categories_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('mistake_categories_list')}
+                  />
+                  <Button onClick={() => handleAddListItem('mistake_categories_list')}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.mistake_categories_list?.map((item: any) => (
+                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <span className="text-sm">{item.label}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('mistake_categories_list', item.id || "")}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 4: Assets & Platforms */}
+          <TabsContent value="assets" className="space-y-6 pt-4">
+            <Card className="border-border/60 shadow-sm bg-background">
+              <CardHeader>
+                <CardTitle>Traded Assets</CardTitle>
+                <CardDescription>Your instrument watchlist. Format: &quot;SYMBOL, Class&quot;</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="e.g. BTCUSD, Crypto" 
+                    value={newItemInputs['asset_list'] || ""}
+                    onChange={e => setNewItemInputs(p => ({...p, asset_list: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddListItem('asset_list', true)}
+                  />
+                  <Button onClick={() => handleAddListItem('asset_list', true)}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {settings?.asset_list?.map((item: any) => (
+                    <div key={item.symbol} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
+                      <div>
+                        <span className="text-sm font-bold">{item.symbol}</span>
+                        <span className="text-xs text-text-muted ml-2">{item.asset_class}</span>
+                      </div>
+                      {item.custom && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('asset_list', item.symbol || "", true)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+
           
 
 
         </Tabs>
 
-        
-
-        {/* Danger Zone (Restored Full Layout) */}
+        {/* Danger Zone */}
         <div className="mt-16 pt-8 border-t border-border/50">
           <div className="flex flex-col space-y-2 mb-6">
             <h2 className="text-2xl font-bold tracking-tight text-loss">Danger Zone</h2>
@@ -393,7 +519,7 @@ export default function SettingsPage() {
                       
                       await supabase.auth.signOut();
                       window.location.href = "/register";
-                    } catch (error: unknown) {
+                    } catch (error: any) {
                       toast({ title: "Deletion Failed", description: (error as Error).message, variant: "destructive" });
                     }
                   }
