@@ -446,6 +446,123 @@ export default function SettingsPage() {
           
 
 
+        
+          {/* TAB 5: Export & Import Data */}
+          <TabsContent value="export" className="pt-4 space-y-6">
+            <Card className="border-border/60 shadow-sm bg-background">
+              <CardHeader>
+                <CardTitle>Bulk Import Trades (CSV)</CardTitle>
+                <CardDescription>Import historical trades from a spreadsheet.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-text-muted">
+                  To ensure a successful import, please download our standard template. Fill it with your historical trades, then select the file below to upload. 
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button variant="outline" onClick={() => {
+                    const template = "trade_date,trade_time_utc,symbol,direction,entry_price,stop_loss_price,status,net_pnl\n2023-01-15,14:30,XAUUSD,Long,1950.00,1940.00,Closed - Win,500.00";
+                    const blob = new Blob([template], { type: "text/csv" });
+                    const a = document.createElement("a");
+                    a.href = window.URL.createObjectURL(blob);
+                    a.download = "wyckoff-journal-template.csv";
+                    a.click();
+                  }}>
+                    <Download className="mr-2 h-4 w-4" /> Download Template
+                  </Button>
+                  
+                  <div className="relative">
+                    <Input 
+                      type="file" 
+                      accept=".csv" 
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        const Papa = (await import('papaparse')).default;
+                        Papa.parse(file, {
+                          header: true,
+                          skipEmptyLines: true,
+                          complete: async (results) => {
+                            try {
+                              setIsLoading(true);
+                              const { data: { user } } = await supabase.auth.getUser();
+                              if (!user) throw new Error("Not authenticated");
+                              const { data: activePorts } = await supabase.from('portfolios').select('id').eq('user_id', user.id).eq('is_active', true).limit(1);
+                              const activePort = activePorts?.[0];
+                              if (!activePort) throw new Error("No active account.");
+
+                              const newTrades = results.data.map((row: any) => ({
+                                user_id: user.id,
+                                portfolio_id: activePort.id,
+                                trade_date: row.trade_date || new Date().toISOString().split('T')[0],
+                                trade_time_utc: row.trade_time_utc || '00:00',
+                                symbol: row.symbol || 'UNKNOWN',
+                                asset_class: 'Other',
+                                direction: row.direction || 'Long',
+                                entry_price: Number(row.entry_price || 0),
+                                stop_loss_price: Number(row.stop_loss_price || 0),
+                                status: row.status || 'Closed - Win',
+                                net_pnl: Number(row.net_pnl || 0),
+                                gross_pnl: Number(row.net_pnl || 0),
+                                analysis_timeframe: '1H',
+                                entry_timeframe: '15M',
+                                strategy: 'Imported',
+                                schematic: 'Other',
+                                entry_event: 'Other',
+                                num_tp_levels: 1,
+                                risk_percentage: 1
+                              }));
+
+                              const { error } = await supabase.from('trades').insert(newTrades);
+                              if (error) throw error;
+                              
+                              toast({ title: "Import Successful", description: `${newTrades.length} trades imported securely.` });
+                              window.location.reload();
+                            } catch (err: unknown) {
+                              toast({ title: "Import Failed", description: (err as Error).message, variant: "destructive" });
+                              setIsLoading(false);
+                            }
+                          }
+                        });
+                      }}
+                    />
+                    <Button variant="default" className="w-full sm:w-auto">
+                      <UploadCloud className="mr-2 h-4 w-4" /> Upload CSV
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60 shadow-sm bg-background">
+              <CardHeader>
+                <CardTitle>Export Data</CardTitle>
+                <CardDescription>Download your entire trading history as a spreadsheet.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handleExportCSV} className="w-full md:w-auto" variant="outline">
+                  <Download className="mr-2 h-4 w-4" /> Export All Trades (CSV)
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60 shadow-sm bg-background">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">Public Track Record</CardTitle>
+                <CardDescription>Generate a secure, read-only link to share your performance.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-text-muted">
+                  When enabled, anyone with the link can view your Win Rate, Profit Factor, and Equity Curve. 
+                  <strong> All monetary values (account balance, lot sizes, PnL) are permanently hidden from the public view.</strong>
+                </p>
+                <Button variant="outline" onClick={() => alert("Public Sharing URL: https://trading-journal.vercel.app/shared/" + profile?.id + "\n\n(This feature will go live in the next phase update!)")}>
+                  Generate Secure Link
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Danger Zone */}
