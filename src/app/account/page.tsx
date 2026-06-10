@@ -86,7 +86,8 @@ export default function AccountPage() {
     // Reactivate chosen safely
     await supabase.from('portfolios').update({ is_active: true }).eq('id', id);
     
-    window.location.reload();
+    // Soft reload to preserve React state
+    window.location.href = window.location.pathname;
   };
 
   const executeAddEvent = async () => {
@@ -136,7 +137,8 @@ export default function AccountPage() {
       toast({ title: "Deleted", description: "Account permanently deleted." });
       if (activePortfolio?.id === id) setActivePortfolio(null); // Clear active if we just deleted it
       fetchData();
-      window.location.reload(); // Refresh the entire app state to clear out ghost data
+      // Soft reload to clear ghost data without full page crash
+      window.location.href = window.location.pathname;
     }
     setIsLoading(false);
   };
@@ -220,7 +222,7 @@ export default function AccountPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-background border-border">
                             <DropdownMenuItem className="focus:bg-background-tertiary cursor-pointer" onClick={() => {
-                              supabase.from('portfolios').update({ is_active: false }).eq('id', p.id).then(() => window.location.reload());
+                              supabase.from('portfolios').update({ is_active: false }).eq('id', p.id).then(() => window.location.href = window.location.pathname);
                             }}>
                               Deactivate Account
                             </DropdownMenuItem>

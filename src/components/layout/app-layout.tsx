@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth-provider";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, BookOpen, BarChart2, Wallet, Camera, Settings, LogOut, Plus, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut } = useAuth();
   const { isPrivate, togglePrivacy } = usePrivacy();
   const pathname = usePathname();
+  const router = useRouter();
 
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [activePortfolio, setActivePortfolio] = useState<string | null>(null);
@@ -57,8 +58,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     
     setActivePortfolio(id);
     
-    // Refresh the page fully to reload all isolated data
-    window.location.reload();
+    // Soft reload via Next.js router to preserve state and avoid full page refresh
+    router.refresh();
   };
 
   return (
