@@ -65,14 +65,21 @@ export default function DashboardPage() {
 
   
   const handleDailyCheckin = async () => {
-    if (!profile) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const today = new Date().toISOString().split('T')[0];
     const { error } = await supabase.from('daily_checkins').insert({
-      user_id: profile.id, // Using profile.id as user_id proxy since they map 1:1
+      user_id: user.id,
       checkin_date: today,
       mood_score: moodScore,
       discipline_score: disciplineScore
     });
+    
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
     
     if (!error) {
       setHasCheckedIn(true);
@@ -318,12 +325,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Algorithmic Trading Coach */}
-        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center animate-in slide-in-from-top-4 fade-in duration-500">
-          <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
-            <div className="p-2 bg-primary text-primary-foreground rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 md:p-4 flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center animate-in slide-in-from-top-4 fade-in duration-500">
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="p-1.5 md:p-2 bg-primary text-primary-foreground rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <h3 className="font-bold text-foreground uppercase tracking-wider text-sm">Smart Insights</h3>
+            <h3 className="font-bold text-foreground uppercase tracking-wider text-xs md:text-sm">Smart Insights</h3>
           </div>
           <div className="w-full overflow-hidden relative">
             {/* Simple fading carousel for insights */}
