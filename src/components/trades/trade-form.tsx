@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { usePrivacy } from "@/components/privacy-provider";
+import DOMPurify from "dompurify";
 
 const GLOBAL_CRITERIA = ["Volume Confluence", "Seek and Destroy", "Divergence", "Leader-Lagger Reference", "Volatility"];
 
@@ -297,20 +298,17 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       const formData = new FormData();
       formData.append('file', file);
 
-      // We attempt a secure signed upload first via our Next.js API route
-      // If the user hasn't set up the API Secret, we gracefully fallback to the unsigned preset.
+      // Secure signed upload only — no unsigned fallback
       const signRes = await fetch('/api/sign-cloudinary');
       const signData = await signRes.json();
 
-      if (signRes.ok && signData.signature) {
-        formData.append('api_key', process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || '');
-        formData.append('timestamp', signData.timestamp);
-        formData.append('signature', signData.signature);
-      } else {
-        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-        if (!uploadPreset) throw new Error("Missing both Secure API signature and Unsigned Upload Preset");
-        formData.append('upload_preset', uploadPreset);
+      if (!signRes.ok || !signData.signature) {
+        throw new Error("Secure upload unavailable. Please check server configuration.");
       }
+
+      formData.append('api_key', process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || '');
+      formData.append('timestamp', signData.timestamp);
+      formData.append('signature', signData.signature);
 
       const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
@@ -393,7 +391,9 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
         gross_pnl,
         net_pnl,
         actual_rr_achieved,
-        weighted_avg_rr_planned
+        weighted_avg_rr_planned,
+        pre_trade_reasoning: data.pre_trade_reasoning ? DOMPurify.sanitize(data.pre_trade_reasoning) : undefined,
+        post_trade_lesson: data.post_trade_lesson ? DOMPurify.sanitize(data.post_trade_lesson) : undefined
       };
 
       if (initialData?.id) {

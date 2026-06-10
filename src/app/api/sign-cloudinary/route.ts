@@ -23,7 +23,8 @@ export async function GET() {
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
     
     if (!apiSecret) {
-      return NextResponse.json({ error: "CLOUDINARY_API_SECRET not set" }, { status: 500 });
+      console.error("[sign-cloudinary] API secret not configured");
+      return NextResponse.json({ error: "Image upload service temporarily unavailable" }, { status: 503 });
     }
 
     const signature = cloudinary.utils.api_sign_request(

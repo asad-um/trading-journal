@@ -21,7 +21,10 @@ export default function TradeDetailPage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     async function fetchTrade() {
-      const { data } = await supabase.from("trades").select("*").eq("id", params.id).single();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setIsLoading(false); return; }
+      
+      const { data } = await supabase.from("trades").select("*").eq("id", params.id).eq("user_id", user.id).single();
       if (data) setTrade(data);
       setIsLoading(false);
     }

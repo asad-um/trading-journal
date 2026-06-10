@@ -36,13 +36,17 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 |---|-------|------|--------|
 | 1 | **Service Role Key Exposure** — API returned `SUPABASE_SERVICE_ROLE_KEY` name in error messages | `api/delete-account/route.ts`, `settings/page.tsx` | ✅ Fixed |
 
+### CRITICAL (Fixed)
+| # | Issue | File | Status |
+|---|-------|------|--------|
+| 2 | **Trade Detail No User Filter** — Fetches by ID only, relies solely on RLS | `trades/[id]/page.tsx` | ✅ Fixed |
+| 3 | **XSS via Stored HTML** — TipTap content stored raw; DOMPurify only on render | `trade-form.tsx` | ✅ Fixed |
+| 4 | **Cloudinary Unsigned Upload Fallback** — Falls back to unsigned preset if signed fails | `trade-form.tsx`, `api/sign-cloudinary` | ✅ Fixed |
+
 ### CRITICAL (Open)
 | # | Issue | File | Risk |
 |---|-------|------|------|
-| 2 | **No CSRF Protection** — State-changing API routes lack CSRF tokens | All API routes | High |
-| 3 | **Cloudinary Unsigned Upload Fallback** — Falls back to unsigned preset if signed fails | `trade-form.tsx` | High |
-| 4 | **XSS via Stored HTML** — TipTap content stored raw; DOMPurify only on render | `trade-form.tsx`, `trades/[id]/page.tsx` | Medium |
-| 5 | **Trade Detail No User Filter** — Fetches by ID only, relies solely on RLS | `trades/[id]/page.tsx` | Medium |
+| 5 | **No CSRF Protection** — State-changing API routes lack CSRF tokens | All API routes | High |
 
 ### HIGH (Open)
 | # | Issue | File | Risk |
@@ -115,6 +119,9 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 | Date | Issue | Files | Commit |
 |------|-------|-------|--------|
 | 2026-06-10 | Service Role Key exposure | `api/delete-account/route.ts`, `settings/page.tsx` | ✅ Applied |
+| 2026-06-10 | Trade Detail No User Filter | `trades/[id]/page.tsx` | ✅ Applied |
+| 2026-06-10 | XSS via Stored HTML | `trade-form.tsx` | ✅ Applied |
+| 2026-06-10 | Cloudinary Unsigned Upload Fallback | `trade-form.tsx`, `api/sign-cloudinary` | ✅ Applied |
 
 ---
 

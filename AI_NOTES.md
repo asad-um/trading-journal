@@ -85,3 +85,4 @@ npm run lint    # ESLint
 |------|----------|-----------|
 | 2026-06-10 | Fixed service role key exposure with generic messages | Security > debuggability; server logs retain detail |
 | 2026-06-10 | Updated PROJECT_AUDIT.md Fix Log to ✅ Applied | Persistence rule compliance |
+| 2026-06-10 | Batch 1+2: Trade Detail user filter, XSS sanitize-on-save, Cloudinary signed-only | Defense in depth, remove insecure fallbacks |
