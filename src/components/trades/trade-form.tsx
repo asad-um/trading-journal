@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle,  } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UploadCloud, X, Zap, CheckCircle2,  } from "lucide-react";
@@ -219,7 +221,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     const current = form.getValues("tp_levels");
     if (num > current.length) {
       for (let i = current.length; i < num; i++) {
-        appendTP({ level: i + 1, price: 0, position_percent: 0, rr: 0, potential_pnl: 0, hit: false });
+        appendTP({ level: i + 1, price: 0, position_percent: 0, rr: 0, potential_pnl: 0, hit: false }, { shouldFocus: false });
       }
     } else if (num < current.length) {
       for (let i = current.length - 1; i >= num; i--) {
@@ -468,7 +470,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
         variant: "destructive",
         duration: 10000
       });
-      })} className="space-y-6 pb-20 max-w-4xl mx-auto">
+      })} className="space-y-6 pb-20 max-w-4xl mx-auto w-full overflow-x-hidden p-1">
         
         {/* Section 1: Core Setup */}
         <Card className="border-border/50 shadow-sm overflow-hidden bg-background">
