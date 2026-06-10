@@ -51,9 +51,15 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 ### HIGH (Open)
 | # | Issue | File | Risk |
 |---|-------|------|------|
-| 6 | **No Rate Limiting** — API routes unprotected | All API routes | High |
-| 7 | **Client-Side File Validation Only** — Image upload validation bypassable | `trade-form.tsx` | Medium |
-| 8 | **Sensitive Data in localStorage** — Trade drafts stored unencrypted | `trade-form.tsx` | Low |
+| 6 | **Client-Side File Validation Only** — Image upload validation bypassable | `trade-form.tsx` | Medium |
+| 7 | **Sensitive Data in localStorage** — Trade drafts stored unencrypted | `trade-form.tsx` | Low |
+
+### HIGH (Fixed)
+| # | Issue | File | Status |
+|---|-------|------|--------|
+| 8 | **No Rate Limiting** — API routes unprotected | All API routes | ✅ Fixed |
+| 9 | **Portfolio Switch = Full Reload** | `app-layout.tsx`, `account/page.tsx` | ✅ Fixed |
+| 10 | **Duplicate Danger Zone Code** | `settings/page.tsx` | ✅ Fixed |
 
 ---
 
@@ -122,6 +128,9 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 | 2026-06-10 | Trade Detail No User Filter | `trades/[id]/page.tsx` | ✅ Applied |
 | 2026-06-10 | XSS via Stored HTML | `trade-form.tsx` | ✅ Applied |
 | 2026-06-10 | Cloudinary Unsigned Upload Fallback | `trade-form.tsx`, `api/sign-cloudinary` | ✅ Applied |
+| 2026-06-10 | No Rate Limiting | `src/lib/rate-limit.ts`, all API routes | ✅ Applied |
+| 2026-06-10 | Portfolio Switch = Full Reload | `app-layout.tsx`, `account/page.tsx` | ✅ Applied |
+| 2026-06-10 | Duplicate Danger Zone Code | `settings/page.tsx` | ✅ Applied |
 
 ---
 
