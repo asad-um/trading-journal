@@ -141,6 +141,9 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 | 2026-06-11 | Top 5 → Top 3 Best/Worst Trades | `statistics/page.tsx` | ✅ Applied |
 | 2026-06-11 | Strategy/Criteria Card Mobile Containment | `statistics/page.tsx` | ✅ Applied |
 | 2026-06-11 | Password Reset on Login Page | `login/page.tsx` | ✅ Applied |
+| 2026-06-11 | Mental Edge Duplicate Key Fix (UPSERT) | `dashboard/page.tsx` | ✅ Applied |
+| 2026-06-11 | Dashboard Recent Trades Limit (10→5) | `dashboard/page.tsx` | ✅ Applied |
+| 2026-06-11 | Danger Zone Standalone Settings Tab | `settings/page.tsx` | ✅ Applied |
 
 ---
 

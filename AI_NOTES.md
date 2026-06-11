@@ -23,6 +23,9 @@
 | 11 | **Top 5 → Top 3** — User requested fewer trades in best/worst lists | LOW | `statistics/page.tsx` | ✅ FIXED |
 | 12 | **Strategy/Playbook Containment** — Numbers overflow on mobile | MEDIUM | `statistics/page.tsx` | ✅ FIXED |
 | 13 | **Password Reset** — No forgot password option on login | HIGH | `login/page.tsx` | ✅ FIXED |
+| 14 | **Mental Edge Duplicate Key** — `daily_checkins` INSERT fails on re-checkin | CRITICAL | `dashboard/page.tsx` | ✅ FIXED |
+| 15 | **Dashboard Recent Trades Overflow** — Shows 10 trades, user wants fewer | LOW | `dashboard/page.tsx` | ✅ FIXED |
+| 16 | **Danger Zone Location** — Buried in General tab, needs standalone tab | MEDIUM | `settings/page.tsx` | ✅ FIXED |
 
 ### Supabase SQL Answer
 **YES** — You need to run SQL in Supabase for:
