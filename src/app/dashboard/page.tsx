@@ -146,7 +146,7 @@ export default function DashboardPage() {
     const openPositions = trades.filter(t => t.status === 'Open');
 
 
-    // --- Algorithmic Trading Coach (Smart Insights) ---
+    // --- Algorithmic Trading Coach (Smart Insights v2) ---
     const insights: string[] = [];
     
     if (closed.length >= 5) {
@@ -173,21 +173,61 @@ export default function DashboardPage() {
         }
       });
       
-      if (bestSymbol) insights.push(`🔥 Strong Edge: You have a ${bestSymbolWR.toFixed(0)}% win rate on ${bestSymbol}. Focus on this asset.`);
-      if (worstSymbol) insights.push(`⚠️ Wealth Leak: You have a ${worstSymbolWR.toFixed(0)}% win rate on ${worstSymbol}. Consider dropping it.`);
+      if (bestSymbol) insights.push(`🔥 Strong Edge: ${bestSymbol} — ${bestSymbolWR.toFixed(0)}% win rate. Consider this your A+ setup.`);
+      if (worstSymbol) insights.push(`⚠️ Wealth Leak: ${worstSymbol} — ${worstSymbolWR.toFixed(0)}% win rate. Reduce size or avoid entirely.`);
       
-      // 2. Day of Week Analysis
-      let fridayPnL = 0;
+      // 2. Long vs Short Directional Edge
+      const longTrades = closed.filter(t => t.direction === 'Long');
+      const shortTrades = closed.filter(t => t.direction === 'Short');
+      const longWR = longTrades.length > 0 ? (longTrades.filter(t => t.net_pnl > 0).length / longTrades.length * 100) : 0;
+      const shortWR = shortTrades.length > 0 ? (shortTrades.filter(t => t.net_pnl > 0).length / shortTrades.length * 100) : 0;
+      
+      if (longTrades.length >= 3 && shortTrades.length >= 3) {
+        if (longWR > shortWR + 15) insights.push(`📈 Long Bias: Your Long win rate (${longWR.toFixed(0)}%) significantly outperforms Shorts (${shortWR.toFixed(0)}%). Focus on buying dips.`);
+        if (shortWR > longWR + 15) insights.push(`📉 Short Bias: Your Short win rate (${shortWR.toFixed(0)}%) significantly outperforms Longs (${longWR.toFixed(0)}%). Consider bearish setups.`);
+      }
+      
+      // 3. Win/Loss Streak Detection
+      let currentStreak = 0;
+      let streakType = '';
+      const sortedByDate = [...closed].sort((a,b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+      for (const t of sortedByDate) {
+        const isWin = t.net_pnl > 0;
+        if (streakType === '') { streakType = isWin ? 'win' : 'loss'; currentStreak = 1; }
+        else if ((streakType === 'win' && isWin) || (streakType === 'loss' && !isWin)) { currentStreak++; }
+        else { break; }
+      }
+      if (streakType === 'loss' && currentStreak >= 3) insights.push(`🛑 Losing Streak: ${currentStreak} consecutive losses. Step away. Risk of tilt is high — mandatory 24h cooling off recommended.`);
+      if (streakType === 'win' && currentStreak >= 4) insights.push(`✅ Hot Streak: ${currentStreak} consecutive wins — but don't get euphoric. Lock profits, stick to plan, avoid oversized positions.`);
+      
+      // 4. Day of Week Analysis (expanded)
+      const dowPnL: Record<number, { pnl: number, count: number }> = {};
+      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
       closed.forEach(t => {
-        if (new Date(t.trade_date).getDay() === 5) fridayPnL += t.net_pnl;
+        const day = new Date(t.trade_date).getDay();
+        if (!dowPnL[day]) dowPnL[day] = { pnl: 0, count: 0 };
+        dowPnL[day].pnl += t.net_pnl;
+        dowPnL[day].count++;
       });
-      if (fridayPnL < 0) insights.push(`📉 Friday Bleed: Statistically, you lose money on Fridays. Size down or skip trading.`);
       
-      // 3. Session Analysis
+      let worstDay = -1;
+      let worstDayPnL = 0;
+      Object.keys(dowPnL).forEach(d => {
+        const num = parseInt(d);
+        if (dowPnL[num].count >= 2 && dowPnL[num].pnl < worstDayPnL) {
+          worstDayPnL = dowPnL[num].pnl;
+          worstDay = num;
+        }
+      });
+      if (worstDay >= 0) insights.push(`📆 Avoid ${dayNames[worstDay]}s: You've lost ${blurMoney(Math.abs(worstDayPnL))} across ${dowPnL[worstDay].count} trades. Consider no-trade days.`);
+      
+      // 5. Session Analysis
       const sessionMap: Record<string, number> = {};
       closed.forEach(t => {
-        if (!sessionMap[t.session]) sessionMap[t.session] = 0;
-        sessionMap[t.session] += t.net_pnl;
+        if (t.session) {
+          if (!sessionMap[t.session]) sessionMap[t.session] = 0;
+          sessionMap[t.session] += t.net_pnl;
+        }
       });
       let bestSession = "";
       let bestSessionPnL = -Infinity;
@@ -197,10 +237,56 @@ export default function DashboardPage() {
           bestSession = sess;
         }
       });
-      if (bestSessionPnL > 0) insights.push(`💡 Ideal Window: The ${bestSession} session is your most profitable (${bestSessionPnL > 0 ? "+" : ""}${blurMoney(bestSessionPnL)}).`);
+      if (bestSessionPnL > 0 && bestSession) insights.push(`💡 Ideal Window: The ${bestSession} session is your most profitable (+${blurMoney(bestSessionPnL)}). Schedule your best focus time here.`);
+      
+      // 6. Risk Management Check
+      const largestLoss = Math.min(...closed.map(t => t.net_pnl));
+      const avgLossAmt = losses.length > 0 ? losses.reduce((a,t) => a + Math.abs(t.net_pnl), 0) / losses.length : 0;
+      if (Math.abs(largestLoss) > avgLossAmt * 2.5) {
+        insights.push(`🚨 Outlier Loss: Your largest loss (${blurMoney(largestLoss)}) is 2.5x your average. Review it — was it a discipline break or an acceptable risk?`);
+      }
+      
+      // 7. Monthly Trend
+      const monthlyPnL: Record<string, number> = {};
+      closed.forEach(t => {
+        const monthKey = format(new Date(t.trade_date), "MMM yyyy");
+        monthlyPnL[monthKey] = (monthlyPnL[monthKey] || 0) + t.net_pnl;
+      });
+      const months = Object.keys(monthlyPnL).sort();
+      if (months.length >= 2) {
+        const lastMonth = months[months.length - 1];
+        const prevMonth = months[months.length - 2];
+        if (monthlyPnL[lastMonth] > monthlyPnL[prevMonth]) {
+          insights.push(`📊 Trending Up: ${lastMonth} (${monthlyPnL[lastMonth] > 0 ? '+' : ''}${blurMoney(monthlyPnL[lastMonth])}) outperformed ${prevMonth}. Keep doing what's working.`);
+        } else if (monthlyPnL[lastMonth] < monthlyPnL[prevMonth] && monthlyPnL[lastMonth] < 0) {
+          insights.push(`📉 Trending Down: ${lastMonth} was your worst recent month (${blurMoney(monthlyPnL[lastMonth])}). Consider a strategy review.`);
+        }
+      }
+      
+      // 8. Criteria Confluence Factor
+      const criteriaImpact: Record<string, { present: number, absent: number }> = {};
+      closed.forEach(t => {
+        const allCriteria = (t.criteria_checked || []).map((c: any) => c.label);
+        // Check strategy/setups linked to criteria
+        if (allCriteria.length >= 3) {
+          // This trade had good confluence
+        }
+      });
+      
+      // 9. Overtrading Detection (3+ trades in one day)
+      const dayTradeCount: Record<string, number> = {};
+      closed.forEach(t => {
+        const d = t.trade_date;
+        dayTradeCount[d] = (dayTradeCount[d] || 0) + 1;
+      });
+      const overtradeDays = Object.entries(dayTradeCount).filter(([_, count]) => count >= 3);
+      if (overtradeDays.length > 0) {
+        const otPnL = overtradeDays.reduce((acc, [date]) => acc + closed.filter(t => t.trade_date === date).reduce((s,t) => s + t.net_pnl, 0), 0);
+        if (otPnL < 0) insights.push(`⚡ Overtrading Alert: ${overtradeDays.length} day(s) with 3+ trades cost you ${blurMoney(otPnL)}. Quality over quantity.`);
+      }
     }
 
-    if (insights.length === 0) insights.push("Log at least 5 closed trades to unlock Algorithmic Coach insights.");
+    if (insights.length === 0) insights.push("📊 Log at least 5 closed trades to unlock personalized Smart Insights. Each trade matters for your edge profile.");
 
     return { 
       floatingPnL, 
