@@ -15,11 +15,11 @@ ALTER TABLE trades
 
 ALTER TABLE trades 
   ADD CONSTRAINT chk_analysis_timeframe 
-  CHECK (analysis_timeframe IS NULL OR analysis_timeframe IN ('2H', '1H', '30M', '15M'));
+  CHECK (analysis_timeframe IS NULL OR analysis_timeframe IN ('4H', '2H', '1H', '30M', '15M'));
 
 ALTER TABLE trades 
   ADD CONSTRAINT chk_entry_timeframe 
-  CHECK (entry_timeframe IS NULL OR entry_timeframe IN ('5M', '1M', '30S', '15S', '5S'));
+  CHECK (entry_timeframe IS NULL OR entry_timeframe IN ('15M', '5M', '1M', '30S', '15S', '5S'));
 
 -- Update existing trades to have sensible defaults based on current data
 UPDATE trades 

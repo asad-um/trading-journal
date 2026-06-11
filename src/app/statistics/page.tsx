@@ -148,8 +148,8 @@ export default function StatisticsPage() {
     const rrEfficiency = totalPlannedRR > 0 ? (totalActualRR / totalPlannedRR) * 100 : 0;
 
     
-    const bestTrades = [...closed].sort((a, b) => b.net_pnl - a.net_pnl).slice(0, 5);
-    const worstTrades = [...closed].sort((a, b) => a.net_pnl - b.net_pnl).slice(0, 5);
+    const bestTrades = [...closed].sort((a, b) => b.net_pnl - a.net_pnl).slice(0, 3);
+    const worstTrades = [...closed].sort((a, b) => a.net_pnl - b.net_pnl).slice(0, 3);
 
     // Timeframe Performance Analysis
     const timeframeStats: Record<string, { wins: number; total: number; netPnL: number }> = {};
@@ -461,7 +461,7 @@ export default function StatisticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               <Card className="border-border/60 shadow-sm bg-background">
                 <CardHeader>
-                  <CardTitle className="text-win flex items-center gap-2">Top 5 Best Trades</CardTitle>
+                  <CardTitle className="text-win flex items-center gap-2">Top 3 Best Trades</CardTitle>
                   <CardDescription>Your most profitable setups contributing to your edge.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -496,7 +496,7 @@ export default function StatisticsPage() {
 
               <Card className="border-border/60 shadow-sm bg-background">
                 <CardHeader>
-                  <CardTitle className="text-loss flex items-center gap-2">Top 5 Worst Trades</CardTitle>
+                  <CardTitle className="text-loss flex items-center gap-2">Top 3 Worst Trades</CardTitle>
                   <CardDescription>Your heaviest losses. Review these for discipline leaks.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
