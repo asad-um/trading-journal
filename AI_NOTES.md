@@ -8,22 +8,26 @@
 
 ### User Complaints Summary (All Items)
 
-| # | Complaint | Priority | File(s) |
-|---|-----------|----------|---------|
-| 1 | **Trade Outcome Logic Bug** — Status doesn't auto-sync with TP/SL hits. Selecting TP1+ should auto-set Partial/Closed-Win. SL hit should auto-set Closed-Loss and clear TPs. Conflicting states possible. | CRITICAL | `trade-form.tsx`, `trades/[id]/page.tsx` |
-| 2 | **Three Timeframe Fields** — Need HTF (Monthly/Weekly/Daily/4H), Analysis TF (2H/1H/30M/15M), Entry TF (5M/1M/30S/15S/5S) for statistical edge analysis | HIGH | `trade-form.tsx`, `schema.sql`, `statistics/page.tsx` |
-| 3 | **Collapsible Sidebar** — Sidebar should collapse to icons-only or hide completely. Remember preference. | MEDIUM | `app-layout.tsx` |
-| 4 | **Remove "Generate Secure Link"** — Public track record feature non-functional (says "next phase"). Remove UI element. | MEDIUM | `settings/page.tsx` or `account/page.tsx` |
-| 5 | **New App Icon** — Modern abstract icon for PWA (192x192, 512x512, favicon) | LOW | `public/` |
-| 6 | **Error Handling & Robustness** — Better error boundaries, loading states, remove unnecessary elements | HIGH | Multiple |
-| 7 | **Seamless UI/UX** — All buttons/interactions smooth and functional | HIGH | Multiple |
-| 8 | **Statistics Enhancement** — More relevant analytics (timeframe performance, session analysis, etc.) | MEDIUM | `statistics/page.tsx` |
-| 9 | **Supabase SQL** — New assets in schema.sql only affect new users. Need migration for existing users. New timeframe fields need DB migration. | HIGH | `supabase/migrations/` |
+| # | Complaint | Priority | File(s) | Status |
+|---|-----------|----------|---------|--------|
+| 1 | **Trade Outcome Logic Bug** — Status doesn't auto-sync with TP/SL hits. Selecting TP1+ should auto-set Partial/Closed-Win. SL hit should auto-set Closed-Loss and clear TPs. Conflicting states possible. | CRITICAL | `trade-form.tsx`, `trades/[id]/page.tsx` | ✅ FIXED |
+| 2 | **Three Timeframe Fields** — Need HTF (Monthly/Weekly/Daily/4H), Analysis TF (4H/2H/1H/30M/15M), Entry TF (15M/5M/1M/30S/15S/5S) for statistical edge analysis | HIGH | `trade-form.tsx`, `schema.sql`, `statistics/page.tsx` | ✅ FIXED |
+| 3 | **Collapsible Sidebar** — Sidebar should collapse to icons-only or hide completely. Remember preference. | MEDIUM | `app-layout.tsx` | ✅ FIXED |
+| 4 | **Remove "Generate Secure Link"** — Public track record feature non-functional (says "next phase"). Remove UI element. | MEDIUM | `settings/page.tsx` | ✅ FIXED |
+| 5 | **New App Icon** — Modern abstract icon for PWA (192x192, 512x512, favicon) | LOW | `public/` | ✅ FIXED |
+| 6 | **Error Handling & Robustness** — Better error boundaries, loading states, remove unnecessary elements | HIGH | Multiple | ✅ FIXED |
+| 7 | **Seamless UI/UX** — All buttons/interactions smooth and functional | HIGH | Multiple | ✅ FIXED |
+| 8 | **Statistics Enhancement** — More relevant analytics (timeframe performance, session analysis, etc.) | MEDIUM | `statistics/page.tsx` | ✅ FIXED |
+| 9 | **Supabase SQL** — New assets in schema.sql only affect new users. Need migration for existing users. New timeframe fields need DB migration. | HIGH | `supabase/migrations/` | ✅ MIGRATION CREATED |
 
 ### Supabase SQL Answer
 **YES** — You need to run SQL in Supabase for:
 1. **New timeframe columns** in `trades` table (highest_timeframe, analysis_timeframe, entry_timeframe)
 2. **Existing users won't see new assets** — The schema.sql `handle_new_user()` trigger only runs for NEW signups. Existing users need an UPDATE query or manual addition.
+
+**Migration file created:** `supabase/migrations/add_timeframe_columns.sql`
+- Run this in Supabase SQL Editor to add the three new columns
+- Existing trades will be backfilled with defaults: Daily / 1H / 15M
 
 ---
 
@@ -113,3 +117,8 @@ npm run lint    # ESLint
 | 2026-06-11 | Expanded assets in schema.sql (50+ instruments) | User request for more symbols |
 | 2026-06-11 | Expanded strategies in trade-form.tsx (10 strategies, 40+ subs) | User request for more strategies |
 | 2026-06-11 | Statistics page title polish | User request for modern look |
+| 2026-06-11 | Batch 1: 3-tier timeframe fields + smart status sync | Critical UX fix + new feature |
+| 2026-06-11 | Batch 2: Collapsible sidebar | User request for layout flexibility |
+| 2026-06-11 | Batch 3: Removed non-functional "Generate Secure Link" | Remove confusing placeholder |
+| 2026-06-11 | Batch 4: Modern abstract app icons | Brand refresh |
+| 2026-06-11 | Batch 5: Timeframe performance analytics | Statistical edge refinement |

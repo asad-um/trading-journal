@@ -1,6 +1,6 @@
 # WJournal Project Audit
 
-> Last updated: 2026-06-10
+> Last updated: 2026-06-11
 > Auditor: AI Code Review (Cline)
 > Scope: Full codebase architecture, security, and scalability review
 
@@ -131,6 +131,12 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 | 2026-06-10 | No Rate Limiting | `src/lib/rate-limit.ts`, all API routes | ✅ Applied |
 | 2026-06-10 | Portfolio Switch = Full Reload | `app-layout.tsx`, `account/page.tsx` | ✅ Applied |
 | 2026-06-10 | Duplicate Danger Zone Code | `settings/page.tsx` | ✅ Applied |
+| 2026-06-11 | 3-Tier Timeframe Fields | `trade-form.tsx`, `types/index.ts`, `validations/trade.ts` | ✅ Applied |
+| 2026-06-11 | Smart Status Sync (TP/SL auto-status) | `trade-form.tsx` | ✅ Applied |
+| 2026-06-11 | Collapsible Sidebar | `app-layout.tsx` | ✅ Applied |
+| 2026-06-11 | Remove Non-Functional "Generate Secure Link" | `settings/page.tsx` | ✅ Applied |
+| 2026-06-11 | Modern Abstract App Icons | `public/`, `generate_icons.py` | ✅ Applied |
+| 2026-06-11 | Timeframe Performance Analytics | `statistics/page.tsx`, `types/index.ts` | ✅ Applied |
 
 ---
 
