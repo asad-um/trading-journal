@@ -390,14 +390,14 @@ export default function StatisticsPage() {
                     <p className="text-sm text-text-muted text-center py-4">No strategy data available.</p>
                   ) : (
                     stats.strategyPerformance.map((strat: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border">
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm truncate pr-4">{strat.name}</p>
+                      <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border overflow-hidden">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate pr-2">{strat.name}</p>
                           <p className="text-xs text-text-muted mt-1">{strat.total} trades</p>
                         </div>
-                        <div className="text-right">
-                          <p className={`font-bold ${strat.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(strat.winRate || 0).toFixed(1)}%</p>
-                          <p className={`text-xs font-mono mt-1 ${strat.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{strat.netPnL > 0 ? "+" : ""}{blurMoney(strat.netPnL)}</p>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <p className={`font-bold text-sm whitespace-nowrap ${strat.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(strat.winRate || 0).toFixed(1)}%</p>
+                          <p className={`text-xs font-mono mt-1 whitespace-nowrap ${strat.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{strat.netPnL > 0 ? "+" : ""}{blurMoney(strat.netPnL)}</p>
                         </div>
                       </div>
                     ))
@@ -415,14 +415,14 @@ export default function StatisticsPage() {
                     <p className="text-sm text-text-muted text-center py-4">No criteria data available.</p>
                   ) : (
                     stats.criteriaPerformance.map((crit: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border">
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm truncate pr-4">{crit.name}</p>
+                      <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border overflow-hidden">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate pr-2">{crit.name}</p>
                           <p className="text-xs text-text-muted mt-1">Present in {crit.total} trades</p>
                         </div>
-                        <div className="text-right">
-                          <p className={`font-bold ${crit.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(crit.winRate || 0).toFixed(1)}%</p>
-                          <p className={`text-xs font-mono mt-1 ${crit.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{crit.netPnL > 0 ? "+" : ""}{blurMoney(crit.netPnL)}</p>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <p className={`font-bold text-sm whitespace-nowrap ${crit.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(crit.winRate || 0).toFixed(1)}%</p>
+                          <p className={`text-xs font-mono mt-1 whitespace-nowrap ${crit.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{crit.netPnL > 0 ? "+" : ""}{blurMoney(crit.netPnL)}</p>
                         </div>
                       </div>
                     ))
