@@ -43,8 +43,9 @@ export interface Trade {
   trade_time_utc: string;
   date_logged: string;
   session: 'Asia' | 'London' | 'NYSE' | 'London/NYSE Overlap' | 'Off-Hours';
-  analysis_timeframe: string;
-  entry_timeframe: string;
+  highest_timeframe?: 'Monthly' | 'Weekly' | 'Daily' | '4H';
+  analysis_timeframe?: '4H' | '2H' | '1H' | '30M' | '15M';
+  entry_timeframe?: '15M' | '5M' | '1M' | '30S' | '15S' | '5S';
   symbol: string;
   asset_class: string;
   direction: 'Long' | 'Short';

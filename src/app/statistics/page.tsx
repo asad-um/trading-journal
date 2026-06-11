@@ -151,7 +151,47 @@ export default function StatisticsPage() {
     const bestTrades = [...closed].sort((a, b) => b.net_pnl - a.net_pnl).slice(0, 5);
     const worstTrades = [...closed].sort((a, b) => a.net_pnl - b.net_pnl).slice(0, 5);
 
-    return { wr, pf, dd, grossPnL, netPnL, totalFees, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency, bestTrades, worstTrades };
+    // Timeframe Performance Analysis
+    const timeframeStats: Record<string, { wins: number; total: number; netPnL: number }> = {};
+    closed.forEach(t => {
+      const isWin = t.net_pnl > 0;
+      const htf = t.highest_timeframe || 'Unknown';
+      const atf = t.analysis_timeframe || 'Unknown';
+      const etf = t.entry_timeframe || 'Unknown';
+      
+      // HTF performance
+      const htfKey = `HTF: ${htf}`;
+      if (!timeframeStats[htfKey]) timeframeStats[htfKey] = { wins: 0, total: 0, netPnL: 0 };
+      timeframeStats[htfKey].total += 1;
+      if (isWin) timeframeStats[htfKey].wins += 1;
+      timeframeStats[htfKey].netPnL += t.net_pnl;
+      
+      // Entry TF performance
+      const etfKey = `Entry: ${etf}`;
+      if (!timeframeStats[etfKey]) timeframeStats[etfKey] = { wins: 0, total: 0, netPnL: 0 };
+      timeframeStats[etfKey].total += 1;
+      if (isWin) timeframeStats[etfKey].wins += 1;
+      timeframeStats[etfKey].netPnL += t.net_pnl;
+      
+      // Combined HTF + Entry TF
+      const comboKey = `${htf} → ${etf}`;
+      if (!timeframeStats[comboKey]) timeframeStats[comboKey] = { wins: 0, total: 0, netPnL: 0 };
+      timeframeStats[comboKey].total += 1;
+      if (isWin) timeframeStats[comboKey].wins += 1;
+      timeframeStats[comboKey].netPnL += t.net_pnl;
+    });
+
+    const timeframePerformance = Object.entries(timeframeStats)
+      .map(([name, data]) => ({
+        name,
+        winRate: (data.wins / data.total) * 100,
+        total: data.total,
+        netPnL: data.netPnL
+      }))
+      .filter(t => t.total >= 2) // Need at least 2 trades for statistical relevance
+      .sort((a, b) => b.winRate - a.winRate);
+
+    return { wr, pf, dd, grossPnL, netPnL, totalFees, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency, bestTrades, worstTrades, timeframePerformance };
   }, [profile, trades]);
 
   if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
@@ -390,6 +430,32 @@ export default function StatisticsPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Timeframe Edge Analysis */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Timeframe Edge Analysis</CardTitle>
+                <CardDescription>Win rates by HTF bias, Entry TF, and combined combinations.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                {(stats.timeframePerformance || []).length === 0 ? (
+                  <p className="text-sm text-text-muted text-center py-4">No timeframe data available. Log trades with timeframe selections to see analysis.</p>
+                ) : (
+                  stats.timeframePerformance.map((tf: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
+                    <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border">
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm truncate pr-4">{tf.name}</p>
+                        <p className="text-xs text-text-muted mt-1">{tf.total} trades</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold ${tf.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(tf.winRate || 0).toFixed(1)}%</p>
+                        <p className={`text-xs font-mono mt-1 ${tf.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{tf.netPnL > 0 ? "+" : ""}{blurMoney(tf.netPnL)}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
 
             {/* Notable Trades References */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
