@@ -16,8 +16,9 @@ const emptyAsUndefined = <T extends z.ZodTypeAny>(zodType: T) =>
 export const tradeSchema = z.object({
   trade_date: z.string(),
   trade_time_utc: z.string(),
-  analysis_timeframe: z.string(),
-  entry_timeframe: z.string(),
+  highest_timeframe: emptyAsUndefined(z.enum(['Monthly', 'Weekly', 'Daily', '4H']).optional()),
+  analysis_timeframe: emptyAsUndefined(z.enum(['4H', '2H', '1H', '30M', '15M']).optional()),
+  entry_timeframe: emptyAsUndefined(z.enum(['15M', '5M', '1M', '30S', '15S', '5S']).optional()),
   symbol: z.string().min(1, "Symbol is required"),
   asset_class: z.string(),
   direction: z.enum(['Long', 'Short']),

@@ -1,9 +1,29 @@
-git add .
-git commit -m "Updated project files"
-git push origin main
 # AI Notes — WJournal
 
 > Working notes for AI coding agents. Update as work progresses.
+
+---
+
+## Session: 2026-06-11
+
+### User Complaints Summary (All Items)
+
+| # | Complaint | Priority | File(s) |
+|---|-----------|----------|---------|
+| 1 | **Trade Outcome Logic Bug** — Status doesn't auto-sync with TP/SL hits. Selecting TP1+ should auto-set Partial/Closed-Win. SL hit should auto-set Closed-Loss and clear TPs. Conflicting states possible. | CRITICAL | `trade-form.tsx`, `trades/[id]/page.tsx` |
+| 2 | **Three Timeframe Fields** — Need HTF (Monthly/Weekly/Daily/4H), Analysis TF (2H/1H/30M/15M), Entry TF (5M/1M/30S/15S/5S) for statistical edge analysis | HIGH | `trade-form.tsx`, `schema.sql`, `statistics/page.tsx` |
+| 3 | **Collapsible Sidebar** — Sidebar should collapse to icons-only or hide completely. Remember preference. | MEDIUM | `app-layout.tsx` |
+| 4 | **Remove "Generate Secure Link"** — Public track record feature non-functional (says "next phase"). Remove UI element. | MEDIUM | `settings/page.tsx` or `account/page.tsx` |
+| 5 | **New App Icon** — Modern abstract icon for PWA (192x192, 512x512, favicon) | LOW | `public/` |
+| 6 | **Error Handling & Robustness** — Better error boundaries, loading states, remove unnecessary elements | HIGH | Multiple |
+| 7 | **Seamless UI/UX** — All buttons/interactions smooth and functional | HIGH | Multiple |
+| 8 | **Statistics Enhancement** — More relevant analytics (timeframe performance, session analysis, etc.) | MEDIUM | `statistics/page.tsx` |
+| 9 | **Supabase SQL** — New assets in schema.sql only affect new users. Need migration for existing users. New timeframe fields need DB migration. | HIGH | `supabase/migrations/` |
+
+### Supabase SQL Answer
+**YES** — You need to run SQL in Supabase for:
+1. **New timeframe columns** in `trades` table (highest_timeframe, analysis_timeframe, entry_timeframe)
+2. **Existing users won't see new assets** — The schema.sql `handle_new_user()` trigger only runs for NEW signups. Existing users need an UPDATE query or manual addition.
 
 ---
 
@@ -90,3 +110,6 @@ npm run lint    # ESLint
 | 2026-06-10 | Updated PROJECT_AUDIT.md Fix Log to ✅ Applied | Persistence rule compliance |
 | 2026-06-10 | Batch 1+2: Trade Detail user filter, XSS sanitize-on-save, Cloudinary signed-only | Defense in depth, remove insecure fallbacks |
 | 2026-06-10 | Batch 3+4+5: Rate limiting on all API routes, removed window.reload() usage, deduped Danger Zone | UX improvement + abuse prevention |
+| 2026-06-11 | Expanded assets in schema.sql (50+ instruments) | User request for more symbols |
+| 2026-06-11 | Expanded strategies in trade-form.tsx (10 strategies, 40+ subs) | User request for more strategies |
+| 2026-06-11 | Statistics page title polish | User request for modern look |

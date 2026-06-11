@@ -54,6 +54,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     } : {
       trade_date: format(new Date(), "yyyy-MM-dd"),
       trade_time_utc: "14:30",
+      highest_timeframe: "Daily",
       analysis_timeframe: "1H",
       entry_timeframe: "15M",
       symbol: "",
@@ -465,6 +466,57 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     }
   };
 
+  // Smart Status Sync: Auto-update status when TP/SL checkboxes change
+  useEffect(() => {
+    const currentTpsHit = Array.isArray(tps_hit) ? tps_hit : [];
+    const currentSlHit = !!sl_hit;
+    const currentStatus = status;
+    const totalTps = tpFields.length;
+
+    // If SL is hit, status must be Closed - Loss and clear TPs
+    if (currentSlHit && currentStatus !== 'Closed - Loss') {
+      form.setValue('status', 'Closed - Loss', { shouldDirty: true });
+      if (currentTpsHit.length > 0) {
+        form.setValue('tps_hit', [], { shouldDirty: true });
+      }
+      return;
+    }
+
+    // If TPs are hit, determine if Partial or Closed - Win
+    if (currentTpsHit.length > 0 && !currentSlHit) {
+      const maxTpHit = Math.max(...currentTpsHit);
+      if (maxTpHit >= totalTps && currentStatus !== 'Closed - Win') {
+        form.setValue('status', 'Closed - Win', { shouldDirty: true });
+      } else if (maxTpHit < totalTps && currentStatus === 'Open') {
+        form.setValue('status', 'Partial', { shouldDirty: true });
+      }
+      return;
+    }
+
+    // If no TPs hit and no SL hit, but status is Closed - Loss/Win, revert to Open
+    if (currentTpsHit.length === 0 && !currentSlHit && 
+        (currentStatus === 'Closed - Loss' || currentStatus === 'Closed - Win')) {
+      form.setValue('status', 'Open', { shouldDirty: true });
+    }
+  }, [tps_hit, sl_hit, status, tpFields.length, form]);
+
+  // Sync checkboxes when status is manually changed
+  useEffect(() => {
+    const currentStatus = status;
+    const currentSlHit = !!sl_hit;
+    const currentTpsHit = Array.isArray(tps_hit) ? tps_hit : [];
+
+    if (currentStatus === 'Closed - Loss') {
+      if (!currentSlHit) form.setValue('sl_hit', true, { shouldDirty: true });
+      if (currentTpsHit.length > 0) form.setValue('tps_hit', [], { shouldDirty: true });
+    } else if (currentStatus === 'Closed - Win' || currentStatus === 'Partial') {
+      if (currentSlHit) form.setValue('sl_hit', false, { shouldDirty: true });
+    } else if (currentStatus === 'Open' || currentStatus === 'Breakeven' || currentStatus === 'Cancelled') {
+      if (currentSlHit) form.setValue('sl_hit', false, { shouldDirty: true });
+      if (currentTpsHit.length > 0) form.setValue('tps_hit', [], { shouldDirty: true });
+    }
+  }, [status, form]);
+
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -598,6 +650,57 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                   </FormItem>
                 )} />
               </div>
+            </div>
+
+            {/* Timeframe Analysis */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-border">
+              <FormField control={form.control} name="highest_timeframe" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-text-muted text-xs uppercase tracking-wide">HTF Bias</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Select HTF" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="Monthly">Monthly</SelectItem>
+                      <SelectItem value="Weekly">Weekly</SelectItem>
+                      <SelectItem value="Daily">Daily</SelectItem>
+                      <SelectItem value="4H">4H</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+              
+              <FormField control={form.control} name="analysis_timeframe" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-text-muted text-xs uppercase tracking-wide">Analysis TF</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Select Analysis TF" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="4H">4H</SelectItem>
+                      <SelectItem value="2H">2H</SelectItem>
+                      <SelectItem value="1H">1H</SelectItem>
+                      <SelectItem value="30M">30M</SelectItem>
+                      <SelectItem value="15M">15M</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+              
+              <FormField control={form.control} name="entry_timeframe" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-text-muted text-xs uppercase tracking-wide">Entry TF</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Select Entry TF" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="15M">15M</SelectItem>
+                      <SelectItem value="5M">5M</SelectItem>
+                      <SelectItem value="1M">1M</SelectItem>
+                      <SelectItem value="30S">30S</SelectItem>
+                      <SelectItem value="15S">15S</SelectItem>
+                      <SelectItem value="5S">5S</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
             </div>
           </CardContent>
         </Card>
