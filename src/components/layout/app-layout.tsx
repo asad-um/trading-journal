@@ -68,22 +68,42 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebar_collapsed', String(newState));
+  };
+
   return (
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-background-secondary p-4">
-        <div className="flex flex-col gap-4 mb-8">
-          <div className="flex items-center justify-between px-2">
-            <h1 className="text-xl font-bold text-foreground">Trade Journal</h1>
+      <aside 
+        className={cn(
+          "hidden md:flex flex-col border-r border-border bg-background-secondary transition-all duration-300 ease-in-out relative",
+          sidebarCollapsed ? "w-16 p-2" : "w-64 p-4"
+        )}
+      >
+        {/* Collapse Toggle */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-6 bg-background border border-border rounded-full p-1 shadow-md hover:shadow-lg transition-all z-50 hidden md:flex items-center justify-center"
+          title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {sidebarCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+        </button>
+
+        <div className={cn("flex flex-col gap-4 mb-8", sidebarCollapsed && "items-center")}>
+          <div className={cn("flex items-center justify-between", sidebarCollapsed ? "px-0 flex-col gap-2" : "px-2")}>
+                {!sidebarCollapsed && <h1 className="text-xl font-bold text-foreground">Trade Journal</h1>}
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" onClick={togglePrivacy} className="text-text-secondary hover:text-foreground">
                 {isPrivate ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
               </Button>
-              <ThemeToggle />
+              {!sidebarCollapsed && <ThemeToggle />}
             </div>
           </div>
           
-          {portfolios.length > 0 && (
+          {portfolios.length > 0 && !sidebarCollapsed && (
             <Select value={activePortfolio || undefined} onValueChange={handleSwitchPortfolio}>
               <SelectTrigger className="h-10 bg-background/50 border-border/50">
                 <SelectValue placeholder="Select Account" />
@@ -97,9 +117,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           )}
         </div>
         
-        <Link href="/trades/new" className="mb-6">
-          <Button className="w-full justify-start gap-2 hover:bg-primary/90 transition-transform hover:scale-105 active:scale-95">
-            <Plus className="h-4 w-4" /> New Trade
+        <Link href="/trades/new" className={cn("mb-6", sidebarCollapsed && "flex justify-center")}>
+          <Button 
+            className={cn(
+              "justify-start gap-2 hover:bg-primary/90 transition-transform hover:scale-105 active:scale-95",
+              sidebarCollapsed ? "w-10 h-10 p-0 justify-center" : "w-full"
+            )}
+            title="New Trade"
+          >
+            <Plus className="h-4 w-4" />
+            {!sidebarCollapsed && "New Trade"}
           </Button>
         </Link>
 
@@ -111,15 +138,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 relative group overflow-hidden",
+                  "flex items-center rounded-lg transition-all duration-200 relative group overflow-hidden",
+                  sidebarCollapsed ? "justify-center px-2 py-2.5" : "gap-3 px-4 py-2.5",
                   isActive 
                     ? "bg-primary/10 text-primary font-semibold shadow-sm" 
                     : "text-text-secondary hover:text-foreground hover:bg-background-tertiary"
                 )}
+                title={item.label}
               >
-                {isActive && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
+                {isActive && <span className={cn("absolute top-0 bottom-0 w-1 bg-primary rounded-r-full", sidebarCollapsed ? "left-0" : "left-0")} />}
                 <item.icon className={cn("h-5 w-5 transition-transform duration-300", isActive && "scale-110")} />
-                {item.label}
+                {!sidebarCollapsed && item.label}
                 <span className="absolute inset-0 bg-foreground/5 opacity-0 group-active:opacity-100 transition-opacity" />
               </Link>
             );
@@ -128,10 +157,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <button
           onClick={signOut}
-          className="flex items-center gap-3 px-3 py-2 text-text-secondary hover:text-loss hover:bg-loss/10 rounded-md transition-all mt-auto group"
+          className={cn(
+            "flex items-center text-text-secondary hover:text-loss hover:bg-loss/10 rounded-md transition-all mt-auto group",
+            sidebarCollapsed ? "justify-center px-2 py-2" : "gap-3 px-3 py-2"
+          )}
+          title="Log Out"
         >
           <LogOut className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
-          Log Out
+          {!sidebarCollapsed && "Log Out"}
         </button>
       </aside>
 
