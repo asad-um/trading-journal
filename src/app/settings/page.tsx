@@ -547,21 +547,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">Public Track Record</CardTitle>
-                <CardDescription>Generate a secure, read-only link to share your performance.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-text-muted">
-                  When enabled, anyone with the link can view your Win Rate, Profit Factor, and Equity Curve. 
-                  <strong> All monetary values (account balance, lot sizes, PnL) are permanently hidden from the public view.</strong>
-                </p>
-                <Button variant="outline" onClick={() => alert("Public Sharing URL: https://trading-journal.vercel.app/shared/" + profile?.id + "\n\n(This feature will go live in the next phase update!)")}>
-                  Generate Secure Link
-                </Button>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
