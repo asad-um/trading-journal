@@ -19,15 +19,20 @@
 | 7 | **Seamless UI/UX** — All buttons/interactions smooth and functional | HIGH | Multiple | ✅ FIXED |
 | 8 | **Statistics Enhancement** — More relevant analytics (timeframe performance, session analysis, etc.) | MEDIUM | `statistics/page.tsx` | ✅ FIXED |
 | 9 | **Supabase SQL** — New assets in schema.sql only affect new users. Need migration for existing users. New timeframe fields need DB migration. | HIGH | `supabase/migrations/` | ✅ MIGRATION CREATED |
+| 10 | **SQL Check Constraint Error** — `chk_entry_timeframe` missing '15M', `chk_analysis_timeframe` missing '4H' | CRITICAL | `supabase/migrations/` | ✅ FIXED |
+| 11 | **Top 5 → Top 3** — User requested fewer trades in best/worst lists | LOW | `statistics/page.tsx` | ✅ FIXED |
+| 12 | **Strategy/Playbook Containment** — Numbers overflow on mobile | MEDIUM | `statistics/page.tsx` | ✅ FIXED |
+| 13 | **Password Reset** — No forgot password option on login | HIGH | `login/page.tsx` | ✅ FIXED |
 
 ### Supabase SQL Answer
 **YES** — You need to run SQL in Supabase for:
 1. **New timeframe columns** in `trades` table (highest_timeframe, analysis_timeframe, entry_timeframe)
-2. **Existing users won't see new assets** — The schema.sql `handle_new_user()` trigger only runs for NEW signups. Existing users need an UPDATE query or manual addition.
+2. **Fix broken constraints** — Run `fix_timeframe_constraints.sql` to correct missing '15M' and '4H' values
+3. **Existing users won't see new assets** — The schema.sql `handle_new_user()` trigger only runs for NEW signups. Existing users need an UPDATE query or manual addition.
 
-**Migration file created:** `supabase/migrations/add_timeframe_columns.sql`
-- Run this in Supabase SQL Editor to add the three new columns
-- Existing trades will be backfilled with defaults: Daily / 1H / 15M
+**Migration files:**
+- `supabase/migrations/add_timeframe_columns.sql` — Add columns + constraints (fixed version)
+- `supabase/migrations/fix_timeframe_constraints.sql` — Fix broken constraints if already applied
 
 ---
 
