@@ -266,46 +266,46 @@ export default function StatisticsPage() {
                   <CardTitle>Core Performance</CardTitle>
                   <CardDescription>Key metrics defining your statistical edge.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
-                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Net P&L</p>
-                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.netPnL > 0 ? "text-win" : stats.netPnL < 0 ? "text-loss" : ""}`}>
+                <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                  <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">
+                    <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">Net P&L</p>
+                    <p className={`font-mono text-lg md:text-3xl tracking-tight font-black truncate ${stats.netPnL > 0 ? "text-win" : stats.netPnL < 0 ? "text-loss" : ""}`}>
                       {stats.netPnL > 0 ? "+" : ""}{blurMoney(stats.netPnL)}
                     </p>
                   </div>
-                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
-                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Profit Factor <InfoTooltip text="Gross Profit / Gross Loss" /></p>
-                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.pf >= 1.5 ? "text-win" : "text-foreground"}`}>
+                  <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">
+                    <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">PF <InfoTooltip text="Gross Profit / Gross Loss" /></p>
+                    <p className={`font-mono text-lg md:text-3xl tracking-tight font-black truncate ${stats.pf >= 1.5 ? "text-win" : "text-foreground"}`}>
                       {stats.pf === Infinity ? '∞' : (stats.pf || 0).toFixed(2)}
                     </p>
                   </div>
-                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
-                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Trade Expectancy <InfoTooltip text="Average expected dollar return per trade taken." /></p>
-                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.expectancy > 0 ? "text-win" : "text-loss"}`}>
+                  <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">
+                    <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">Expectancy <InfoTooltip text="Average expected dollar return per trade taken." /></p>
+                    <p className={`font-mono text-lg md:text-3xl tracking-tight font-black truncate ${stats.expectancy > 0 ? "text-win" : "text-loss"}`}>
                       {stats.expectancy > 0 ? "+" : ""}{blurMoney(stats.expectancy)}
                     </p>
                   </div>
-                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
-                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Recovery Factor <InfoTooltip text="Net Profit / Max Drawdown. Higher means better bounce-back ability." /></p>
-                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.recoveryFactor > 2 ? "text-win" : "text-foreground"}`}>
+                  <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">
+                    <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">Recovery <InfoTooltip text="Net Profit / Max Drawdown. Higher means better bounce-back ability." /></p>
+                    <p className={`font-mono text-lg md:text-3xl tracking-tight font-black truncate ${stats.recoveryFactor > 2 ? "text-win" : "text-foreground"}`}>
                       {(stats.recoveryFactor || 0).toFixed(2)}
                     </p>
                   </div>
-                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
-                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Max Drawdown <InfoTooltip text="Largest peak-to-trough drop in balance." /></p>
-                    <p className="font-mono text-3xl tracking-tight font-black text-loss">
+                  <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">
+                    <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">Drawdown <InfoTooltip text="Largest peak-to-trough drop in balance." /></p>
+                    <p className="font-mono text-lg md:text-3xl tracking-tight font-black text-loss truncate">
                       -{blurMoney(stats.dd.maxDrawdownAmount)}
                     </p>
                   </div>
-                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
-                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">Total Fees Drag <InfoTooltip text="Estimated total fees deducted from Gross P&L." /></p>
-                    <p className="font-mono text-3xl tracking-tight font-black text-loss">
+                  <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">
+                    <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">Fees <InfoTooltip text="Estimated total fees deducted from Gross P&L." /></p>
+                    <p className="font-mono text-lg md:text-3xl tracking-tight font-black text-loss truncate">
                       -{blurMoney(stats.totalFees)}
                     </p>
                   </div>
-                  <div className="p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group">
-                    <p className="text-xs font-semibold text-text-muted mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors">RR Efficiency <InfoTooltip text="Percentage of your Planned RR that you actually captured on winning trades." /></p>
-                    <p className={`font-mono text-3xl tracking-tight font-black ${stats.rrEfficiency >= 80 ? "text-win" : stats.rrEfficiency >= 50 ? "text-breakeven" : "text-loss"}`}>
+                  <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">
+                    <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">RR Efficiency <InfoTooltip text="Percentage of your Planned RR that you actually captured on winning trades." /></p>
+                    <p className={`font-mono text-lg md:text-3xl tracking-tight font-black truncate ${stats.rrEfficiency >= 80 ? "text-win" : stats.rrEfficiency >= 50 ? "text-breakeven" : "text-loss"}`}>
                       {(stats.rrEfficiency || 0).toFixed(1)}%
                     </p>
                   </div>

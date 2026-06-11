@@ -5,6 +5,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { supabase } from "@/lib/supabase";
 import { Trade } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Loader2, Camera, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
