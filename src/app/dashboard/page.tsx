@@ -71,26 +71,27 @@ export default function DashboardPage() {
     if (!user) return;
 
     const today = new Date().toISOString().split('T')[0];
-    const { error } = await supabase.from('daily_checkins').insert({
+    
+    // Use upsert to avoid duplicate key conflict when re-checking in
+    const { error } = await supabase.from('daily_checkins').upsert({
       user_id: user.id,
       checkin_date: today,
       mood_score: moodScore,
-      discipline_score: disciplineScore
-    });
+      discipline_score: disciplineScore,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,checkin_date' });
     
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
     
-    if (!error) {
-      setHasCheckedIn(true);
-      // Let's trigger a subtle UI toast if tilt is detected
-      if (moodScore <= 2 && disciplineScore <= 2) {
-        toast({ title: "Tilt Warning", description: "Low mood and discipline detected. Statistically, you are at high risk of forced errors today. Trade small or step away.", variant: "destructive", duration: 10000 });
-      } else {
-        toast({ title: "Checked In", description: "Have a great trading session." });
-      }
+    setHasCheckedIn(true);
+    // Let's trigger a subtle UI toast if tilt is detected
+    if (moodScore <= 2 && disciplineScore <= 2) {
+      toast({ title: "Tilt Warning", description: "Low mood and discipline detected. Statistically, you are at high risk of forced errors today. Trade small or step away.", variant: "destructive", duration: 10000 });
+    } else {
+      toast({ title: "Checked In", description: "Have a great trading session." });
     }
   };
 
@@ -141,7 +142,7 @@ export default function DashboardPage() {
     }));
 
     // Trade Lists
-    const recentTrades = [...trades].sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime()).slice(0, 10);
+    const recentTrades = [...trades].sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime()).slice(0, 5);
     const openPositions = trades.filter(t => t.status === 'Open');
 
 
