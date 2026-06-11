@@ -199,6 +199,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <Plus className="h-6 w-6" />
         </Button>
       </Link>
+
+      {/* Mobile Logout Button */}
+      <button
+        onClick={signOut}
+        className="md:hidden fixed top-4 right-4 z-50 p-2 rounded-full bg-background-secondary border border-border shadow-md hover:bg-background-tertiary active:scale-95 transition-all"
+        title="Log Out"
+      >
+        <LogOut className="h-4 w-4 text-text-secondary" />
+      </button>
     </div>
   );
 }
