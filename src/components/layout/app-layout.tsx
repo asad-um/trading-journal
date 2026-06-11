@@ -3,7 +3,7 @@
 import { useAuth } from "@/components/auth-provider";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, BookOpen, BarChart2, Wallet, Camera, Settings, LogOut, Plus, HelpCircle } from "lucide-react";
+import { LayoutDashboard, BookOpen, BarChart2, Wallet, Camera, Settings, LogOut, Plus, HelpCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -33,6 +33,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [activePortfolio, setActivePortfolio] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar_collapsed') === 'true';
+    }
+    return false;
+  });
 
   useEffect(() => {
     async function loadPortfolios() {
