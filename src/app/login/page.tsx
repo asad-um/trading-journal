@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -48,7 +48,8 @@ export default function LoginPage() {
         password: values.password,
       });
 
-      if (error) { setIsLoading(false);
+      if (error) { 
+        setIsLoading(false);
         toast({ title: "Login Failed", description: error.message, variant: "destructive" });
         return;
       }
@@ -98,7 +99,7 @@ export default function LoginPage() {
           <CardContent>
             {!resetSent ? (
               <Form {...resetForm}>
-                <form onSubmit={resetForm.handleSubmit(onResetSubmit)} className="space-y-4">
+                <form onSubmit={resetForm.handleSubmit(onResetSubmit)} className="space-y-4" autoComplete="off">
                   <FormField
                     control={resetForm.control}
                     name="email"
@@ -106,7 +107,15 @@ export default function LoginPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="you@example.com" {...field} disabled={isLoading} />
+                          <Input 
+                            type="email" 
+                            inputMode="email" 
+                            autoComplete="email" 
+                            autoFocus
+                            placeholder="you@example.com" 
+                            {...field} 
+                            disabled={isLoading} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -144,7 +153,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
-          <CardDescription className="text-center">Log in to your Wyckoff Journal</CardDescription>
+          <CardDescription className="text-center">Log in to your T Pal</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -156,7 +165,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="you@example.com" {...field} disabled={isLoading} />
+                      <Input type="email" autoComplete="email" placeholder="you@example.com" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

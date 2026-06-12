@@ -434,7 +434,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Psychology Tracker */}
-        <div className="bg-gradient-to-r from-accent/5 to-transparent border border-accent/20 rounded-xl p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className={`bg-gradient-to-r from-accent/5 to-transparent border border-accent/20 rounded-xl overflow-hidden transition-all duration-500 ease-in-out ${hasCheckedIn ? 'max-h-0 opacity-0 p-0 border-0' : 'max-h-[500px] opacity-100 p-4'} flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4`}>
           <div>
             <h3 className="font-bold text-foreground">Mental Edge</h3>
             <p className="text-xs text-text-muted">Track your mood and discipline.</p>

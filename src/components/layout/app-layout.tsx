@@ -94,7 +94,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className={cn("flex flex-col gap-4 mb-8", sidebarCollapsed && "items-center")}>
           <div className={cn("flex items-center justify-between", sidebarCollapsed ? "px-0 flex-col gap-2" : "px-2")}>
-                {!sidebarCollapsed && <h1 className="text-xl font-bold text-foreground">Trade Journal</h1>}
+                {!sidebarCollapsed && <h1 className="text-xl font-bold text-foreground">T Pal</h1>}
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" onClick={togglePrivacy} className="text-text-secondary hover:text-foreground">
                 {isPrivate ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
