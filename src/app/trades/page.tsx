@@ -14,12 +14,15 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePrivacy } from "@/components/privacy-provider";
+import { useTradeFilters, applyTradeFilters } from "@/hooks/use-trade-filters";
+import { TradeFiltersPanel } from "@/components/trades/trade-filters";
 
 export default function TradesPage() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { blurMoney } = usePrivacy();
+  const { filters, setFilter, clearFilters, activeFilterCount, isHydrated } = useTradeFilters();
 
   useEffect(() => {
     async function fetchTrades() {
@@ -88,7 +91,7 @@ export default function TradesPage() {
             if (!res.ok) throw new Error(data.error);
           } catch (e: any) {
             console.error(e);
-            toast({ title: "Image Cleanup Warning", description: e.message || "Failed to delete image from Cloudinary.", variant: "warning" });
+            toast({ title: "Image Cleanup Warning", description: e.message || "Failed to delete image from Cloudinary.", variant: "default" });
           }
         }
       });
@@ -100,6 +103,9 @@ export default function TradesPage() {
       setTrades(trades.filter(t => t.id !== id));
     }
   };
+
+  const strategies = Array.from(new Set(trades.map(t => t.strategy).filter(Boolean))) as string[];
+  const filteredTrades = isHydrated ? applyTradeFilters(trades, filters) : trades;
 
   const getStatusColor = (status: string) => {
     if (status.includes("Win")) return "text-win border-win/30 bg-win/10";
@@ -119,12 +125,25 @@ export default function TradesPage() {
           </Link>
         </div>
 
+        <TradeFiltersPanel
+          filters={filters}
+          setFilter={setFilter}
+          clearFilters={clearFilters}
+          activeFilterCount={activeFilterCount}
+          strategies={strategies}
+        />
+
         {isLoading ? (
           <div className="flex justify-center flex-1 items-center"><Loader2 className="animate-spin h-8 w-8" /></div>
+        ) : filteredTrades.length === 0 ? (
+          <div className="text-center py-20 text-text-muted border-2 border-dashed border-border rounded-lg flex-1 flex flex-col items-center justify-center">
+            <p className="text-lg font-semibold">No trades found</p>
+            <p className="text-sm">{activeFilterCount > 0 ? "Try clearing your filters." : "Start by logging your first trade."}</p>
+          </div>
         ) : (
                     <div className="hidden md:block">
             <DataTable 
-              data={trades} 
+              data={filteredTrades} 
               columns={[
                 {
                   accessorKey: "trade_date",
@@ -186,7 +205,7 @@ export default function TradesPage() {
         {/* Mobile View */}
         {!isLoading && (
           <div className="md:hidden space-y-4 pb-20">
-            {trades.map(trade => (
+            {filteredTrades.map(trade => (
               <div key={trade.id} className="bg-background-secondary border border-border p-4 rounded-lg">
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center gap-2">

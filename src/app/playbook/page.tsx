@@ -11,11 +11,14 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { usePrivacy } from "@/components/privacy-provider";
+import { useTradeFilters, applyTradeFilters } from "@/hooks/use-trade-filters";
+import { TradeFiltersPanel } from "@/components/trades/trade-filters";
 
 export default function PlaybookPage() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { blurMoney } = usePrivacy();
+  const { filters, setFilter, clearFilters, activeFilterCount, isHydrated } = useTradeFilters();
 
   useEffect(() => {
     async function fetchData() {
@@ -27,19 +30,28 @@ export default function PlaybookPage() {
 
       const { data } = await supabase
         .from("trades")
-        .select("id, trade_date, symbol, direction, strategy, sub_strategy, status, net_pnl, pre_trade_images, post_trade_images")
+        .select("id, trade_date, symbol, direction, strategy, sub_strategy, status, net_pnl, session, pre_trade_images, post_trade_images")
         .eq("portfolio_id", activePort.id)
         .order("trade_date", { ascending: false });
 
       if (data) {
         // Filter out trades with no images
         const withImages = data.filter(t => (t.pre_trade_images && t.pre_trade_images.length > 0) || (t.post_trade_images && t.post_trade_images.length > 0));
-        setTrades(withImages);
+        setTrades(withImages as Trade[]);
       }
       setIsLoading(false);
     }
     fetchData();
+
+    const channel = supabase.channel('realtime-playbook')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => fetchData())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); }
   }, []);
+
+  const strategies = Array.from(new Set(trades.map(t => t.strategy).filter(Boolean))) as string[];
+  const filteredTrades = isHydrated ? applyTradeFilters(trades, filters) : trades;
 
   if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
 
@@ -53,15 +65,23 @@ export default function PlaybookPage() {
           <p className="text-text-muted">A gallery of your documented setups. Train your eyes on what works.</p>
         </div>
 
-        {trades.length === 0 ? (
+        <TradeFiltersPanel
+          filters={filters}
+          setFilter={setFilter}
+          clearFilters={clearFilters}
+          activeFilterCount={activeFilterCount}
+          strategies={strategies}
+        />
+
+        {filteredTrades.length === 0 ? (
           <div className="text-center py-20 text-text-muted border-2 border-dashed border-border rounded-lg">
             <Camera className="h-12 w-12 mx-auto mb-4 opacity-20" />
             <p>Your playbook is empty.</p>
-            <p className="text-sm">Log a trade and upload chart screenshots to build your gallery.</p>
+            <p className="text-sm">{activeFilterCount > 0 ? "Try clearing your filters." : "Log a trade and upload chart screenshots to build your gallery."}</p>
           </div>
         ) : (
           <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-            {trades.map(trade => {
+            {filteredTrades.map(trade => {
               const allImages = [...(trade.pre_trade_images || []), ...(trade.post_trade_images || [])];
               const coverImage = allImages[0]?.url;
               

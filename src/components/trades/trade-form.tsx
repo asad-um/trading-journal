@@ -34,8 +34,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [isUploadingPre, setIsUploadingPre] = useState(false);
-  const [isUploadingPost, setIsUploadingPost] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -95,6 +94,8 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
   const tp_levels = useWatch({ control: form.control, name: "tp_levels" });
   const pre_trade_images = useWatch({ control: form.control, name: "pre_trade_images" });
   const post_trade_images = useWatch({ control: form.control, name: "post_trade_images" });
+
+  const allImagesCount = (pre_trade_images?.length || 0) + (post_trade_images?.length || 0);
   const strategy = useWatch({ control: form.control, name: "strategy" });
   const sub_strategy = useWatch({ control: form.control, name: "sub_strategy" });
   const status = useWatch({ control: form.control, name: "status" });
@@ -317,6 +318,12 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Global max 3 images across both sections
+    if (allImagesCount >= 3) {
+      toast({ title: "Upload Limit Reached", description: "You can upload a maximum of 3 images per trade.", variant: "destructive" });
+      return;
+    }
+
     // Strict Client-Side File Validation
     if (!file.type.startsWith('image/')) {
       toast({ title: "Invalid File", description: "Only image files (PNG, JPG, WebP) are allowed.", variant: "destructive" });
@@ -334,7 +341,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       return;
     }
 
-    if (type === 'pre') { setIsUploadingPre(true); } else { setIsUploadingPost(true); }
+    setIsUploading(true);
 
     try {
       const formData = new FormData();
@@ -360,15 +367,17 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       if (!response.ok) throw new Error('Upload failed');
       const data = await response.json();
 
-      const newImage = { url: data.secure_url, public_id: data.public_id, caption: '' };
-      const currentImages = form.getValues(type === 'pre' ? 'pre_trade_images' : 'post_trade_images') || [];
+      const defaultCaption = type === 'pre' ? 'Pre-Trade' : 'Post-Trade';
+      const newImage = { url: data.secure_url, public_id: data.public_id, caption: defaultCaption };
+      const fieldName = type === 'pre' ? 'pre_trade_images' : 'post_trade_images';
+      const currentImages = form.getValues(fieldName) || [];
       
-      form.setValue(type === 'pre' ? 'pre_trade_images' : 'post_trade_images', [...currentImages, newImage]);
-      toast({ title: "Image Uploaded", description: "Screenshot added successfully." });
+      form.setValue(fieldName, [...currentImages, newImage]);
+      toast({ title: "Image Uploaded", description: `Screenshot added (${allImagesCount + 1}/3).` });
     } catch (error: unknown) {
       toast({ title: "Upload Error", description: (error as Error).message, variant: "destructive" });
     } finally {
-      if (type === 'pre') { setIsUploadingPre(false); } else { setIsUploadingPost(false); }
+      setIsUploading(false);
     }
   };
 
@@ -396,6 +405,16 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
         console.error("Garbage collection failed:", e);
         toast({ title: "Image Cleanup Warning", description: e.message || "Failed to delete image from Cloudinary.", variant: "default" });
       }
+    }
+  };
+
+  const updateImageCaption = (type: 'pre' | 'post', index: number, caption: string) => {
+    const fieldName = type === 'pre' ? 'pre_trade_images' : 'post_trade_images';
+    const currentImages = form.getValues(fieldName) || [];
+    const newImages = [...currentImages];
+    if (newImages[index]) {
+      newImages[index] = { ...newImages[index], caption };
+      form.setValue(fieldName, newImages, { shouldDirty: true });
     }
   };
 
@@ -785,53 +804,65 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
               <span className="bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded text-sm">3</span> 
               Trade Screenshots
             </CardTitle>
+            <p className="text-xs text-text-muted">Upload up to 3 images total. Labels are flexible — use them for pre-trade, post-trade, or any context.</p>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-text-secondary">Pre-Trade Setups</h3>
-                <div className="relative">
-                  <Input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e, 'pre')} disabled={isUploadingPre} />
-                  <Button type="button" variant="outline" size="sm" disabled={isUploadingPre} className="h-8">
-                    {isUploadingPre ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <UploadCloud className="h-3 w-3 mr-2" />}
-                    Upload Image
-                  </Button>
-                </div>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-3 bg-background-secondary rounded-lg border border-border">
+              <div className="text-sm">
+                <span className="font-medium">{allImagesCount}</span>
+                <span className="text-text-muted"> / 3 images uploaded</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {pre_trade_images?.map((img: { url: string }, idx: number) => (
-                  <div key={idx} className="relative group rounded-md overflow-hidden border border-border">
-                    <img src={img.url} alt="Pre-Trade" className="w-full h-20 object-cover" />
-                    <button type="button" onClick={() => removeImage(idx, 'pre')} className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X className="h-3 w-3" />
-                    </button>
+              {allImagesCount < 3 && (
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <Input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e, 'pre')} disabled={isUploading} />
+                    <Button type="button" variant="outline" size="sm" disabled={isUploading} className="h-8">
+                      {isUploading ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <UploadCloud className="h-3 w-3 mr-2" />}
+                      Add Image
+                    </Button>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-text-secondary">Post-Trade Results</h3>
-                <div className="relative">
-                  <Input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e, 'post')} disabled={isUploadingPost} />
-                  <Button type="button" variant="outline" size="sm" disabled={isUploadingPost} className="h-8">
-                    {isUploadingPost ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <UploadCloud className="h-3 w-3 mr-2" />}
-                    Upload Image
-                  </Button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {post_trade_images?.map((img: { url: string }, idx: number) => (
-                  <div key={idx} className="relative group rounded-md overflow-hidden border border-border">
-                    <img src={img.url} alt="Post-Trade" className="w-full h-20 object-cover" />
-                    <button type="button" onClick={() => removeImage(idx, 'post')} className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X className="h-3 w-3" />
-                    </button>
+            {(pre_trade_images?.length > 0 || post_trade_images?.length > 0) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pre_trade_images?.map((img: { url: string; caption?: string }, idx: number) => (
+                  <div key={`pre-${idx}`} className="space-y-2">
+                    <div className="relative group rounded-md overflow-hidden border border-border aspect-video bg-background-tertiary">
+                      <img src={img.url} alt={img.caption || "Trade image"} className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => removeImage(idx, 'pre')} className="absolute top-2 right-2 bg-black/70 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-loss">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <Input
+                      type="text"
+                      placeholder="Label (e.g. Pre-Trade)"
+                      value={img.caption || ""}
+                      onChange={(e) => updateImageCaption('pre', idx, e.target.value)}
+                      className="h-8 text-xs bg-background"
+                    />
+                  </div>
+                ))}
+                {post_trade_images?.map((img: { url: string; caption?: string }, idx: number) => (
+                  <div key={`post-${idx}`} className="space-y-2">
+                    <div className="relative group rounded-md overflow-hidden border border-border aspect-video bg-background-tertiary">
+                      <img src={img.url} alt={img.caption || "Trade image"} className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => removeImage(idx, 'post')} className="absolute top-2 right-2 bg-black/70 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-loss">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <Input
+                      type="text"
+                      placeholder="Label (e.g. Post-Trade)"
+                      value={img.caption || ""}
+                      onChange={(e) => updateImageCaption('post', idx, e.target.value)}
+                      className="h-8 text-xs bg-background"
+                    />
                   </div>
                 ))}
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 

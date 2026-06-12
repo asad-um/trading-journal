@@ -65,15 +65,10 @@ export interface Trade {
   risk_amount_usd: number;
   weighted_avg_rr_planned: number;
   actual_rr_achieved: number;
-  position_size: number;
   status: 'Open' | 'Partial' | 'Closed - Win' | 'Closed - Loss' | 'Breakeven' | 'Cancelled';
   breakeven_price?: number;
   tps_hit: number[];
   gross_pnl: number;
-  fee_type?: 'Spread' | 'Commission' | 'Swap' | 'Spread + Commission' | 'Other';
-  fee_amount: number;
-  fee_in_pips: boolean;
-  pip_value?: number;
   net_pnl: number;
   analysis_platform: string;
   execution_platform: 'CTrader' | 'MetaTrader 5' | 'MetaTrader 4' | 'Other';
