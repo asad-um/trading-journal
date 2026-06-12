@@ -101,6 +101,7 @@ export interface UserSettings {
   mistake_categories_list: { id: string; label: string }[];
   broker_list: { id: string; name: string }[];
   execution_platforms_list: { id: string; name: string }[];
+  sessions_list: { id: string; label: string }[];
   updated_at: string;
 }
 

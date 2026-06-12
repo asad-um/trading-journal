@@ -47,48 +47,48 @@ export function TradeFiltersPanel({ filters, setFilter, clearFilters, activeFilt
           className="h-9 bg-background"
         />
         
-        <Select value={filters.strategy} onValueChange={(v) => setFilter("strategy", v)}>
+        <Select value={filters.strategy || "all"} onValueChange={(v) => setFilter("strategy", v === "all" ? "" : v)}>
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder="Strategy" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Strategies</SelectItem>
+            <SelectItem value="all">All Strategies</SelectItem>
             {strategies.map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Select value={filters.status} onValueChange={(v) => setFilter("status", v)}>
+        <Select value={filters.status || "all"} onValueChange={(v) => setFilter("status", v === "all" ? "" : v)}>
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             {STATUS_OPTIONS.map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Select value={filters.direction} onValueChange={(v) => setFilter("direction", v)}>
+        <Select value={filters.direction || "all"} onValueChange={(v) => setFilter("direction", v === "all" ? "" : v)}>
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder="Direction" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Directions</SelectItem>
+            <SelectItem value="all">All Directions</SelectItem>
             {DIRECTION_OPTIONS.map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Select value={filters.session} onValueChange={(v) => setFilter("session", v)}>
+        <Select value={filters.session || "all"} onValueChange={(v) => setFilter("session", v === "all" ? "" : v)}>
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder="Session" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Sessions</SelectItem>
+            <SelectItem value="all">All Sessions</SelectItem>
             {sessions.map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}

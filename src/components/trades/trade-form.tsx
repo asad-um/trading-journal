@@ -239,15 +239,19 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
 
   const applyStrategyCriteria = () => {
     if (!settings?.criteria_list?.length) return;
-    
-    const newCriteria = settings.criteria_list.map((c: { id: string; label: string }) => ({
-      id: c.id,
-      label: c.label,
-      checked: true
-    }));
-    
-    replaceCriteria(newCriteria);
-    toast({ title: "Criteria Autofilled", description: `Applied ${newCriteria.length} checklist items` });
+
+    const existing = form.getValues("criteria_checked") || [];
+    const merged = settings.criteria_list.map((c: { id: string; label: string }) => {
+      const prev = existing.find((item: { id: string }) => item.id === c.id);
+      return {
+        id: c.id,
+        label: c.label,
+        checked: prev?.checked ?? false
+      };
+    });
+
+    replaceCriteria(merged);
+    toast({ title: "Criteria Synced", description: `Updated checklist with ${merged.length} items from your settings.` });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'pre' | 'post') => {
@@ -739,7 +743,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
               <span className="bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded text-sm">3</span> 
               Trade Screenshots
             </CardTitle>
-            <p className="text-xs text-text-muted">Upload up to 3 images total. Labels are flexible — use them for pre-trade, post-trade, or any context.</p>
+            <p className="text-xs text-text-muted">Upload up to 3 images total. Each image must be labeled Pre-Trade or Post-Trade.</p>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-3 bg-background-secondary rounded-lg border border-border">
@@ -761,7 +765,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
             </div>
 
             {(pre_trade_images?.length > 0 || post_trade_images?.length > 0) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {pre_trade_images?.map((img: { url: string; caption?: string }, idx: number) => (
                   <div key={`pre-${idx}`} className="space-y-2">
                     <div className="relative group rounded-md overflow-hidden border border-border aspect-video bg-background-tertiary">
@@ -770,13 +774,15 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <Input
-                      type="text"
-                      placeholder="Label (e.g. Pre-Trade)"
-                      value={img.caption || ""}
-                      onChange={(e) => updateImageCaption('pre', idx, e.target.value)}
-                      className="h-8 text-xs bg-background"
-                    />
+                    <Select value={img.caption || "Pre-Trade"} onValueChange={(val) => updateImageCaption('pre', idx, val)}>
+                      <SelectTrigger className="h-8 text-xs bg-background">
+                        <SelectValue placeholder="Image label" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pre-Trade">Pre-Trade</SelectItem>
+                        <SelectItem value="Post-Trade">Post-Trade</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 ))}
                 {post_trade_images?.map((img: { url: string; caption?: string }, idx: number) => (
@@ -787,13 +793,15 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <Input
-                      type="text"
-                      placeholder="Label (e.g. Post-Trade)"
-                      value={img.caption || ""}
-                      onChange={(e) => updateImageCaption('post', idx, e.target.value)}
-                      className="h-8 text-xs bg-background"
-                    />
+                    <Select value={img.caption || "Post-Trade"} onValueChange={(val) => updateImageCaption('post', idx, val)}>
+                      <SelectTrigger className="h-8 text-xs bg-background">
+                        <SelectValue placeholder="Image label" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pre-Trade">Pre-Trade</SelectItem>
+                        <SelectItem value="Post-Trade">Post-Trade</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 ))}
               </div>

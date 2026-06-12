@@ -198,7 +198,24 @@ UPDATE trades
      OR entry_timeframe IS NULL;
 
 -- ============================================================
--- SECTION 5: Update existing users with expanded assets
+-- SECTION 5: Add sessions_list column and seed defaults
+-- ============================================================
+
+ALTER TABLE public.user_settings
+ADD COLUMN IF NOT EXISTS sessions_list jsonb DEFAULT '[]';
+
+UPDATE user_settings
+SET sessions_list = '[
+  {"id":"asia","label":"Asia"},
+  {"id":"london","label":"London"},
+  {"id":"nyse","label":"NYSE"},
+  {"id":"overlap","label":"London/NYSE Overlap"},
+  {"id":"off-hours","label":"Off-Hours"}
+]'::jsonb
+WHERE sessions_list IS NULL OR jsonb_array_length(sessions_list) = 0;
+
+-- ============================================================
+-- SECTION 6: Update existing users with expanded assets
 -- ============================================================
 
 -- Update all user_settings.asset_list with expanded defaults

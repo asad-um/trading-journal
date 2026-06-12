@@ -119,6 +119,14 @@ const ASSET_SEEDS = [
   "DXY,VIX,US30,US500,US100,DE40,GER40,UK100,JP225,NIKKEI,JPN225,AU200,AUS200,FR40,EU50,HK50,HSI,CN50,SG30,IN50,SA40,BR50,MX35,RUSS2000,SPX,NDX,DJI,FTSE,CAC,DAX,IBEX,MIB,AEX,SMI,OMXS30,OBX,WIG20,BUX,BET,PX,MOEX,RTS,TAIEX,KOSPI,N225,TOPIX,HSCEI,CSI300,SSE,SZSE",
 ];
 
+export const DEFAULT_SESSIONS = [
+  { id: "asia", label: "Asia" },
+  { id: "london", label: "London" },
+  { id: "nyse", label: "NYSE" },
+  { id: "overlap", label: "London/NYSE Overlap" },
+  { id: "off-hours", label: "Off-Hours" },
+];
+
 export const DEFAULT_ASSETS = ASSET_SEEDS
   .flatMap(group => group.split(",").map(symbol => ({
     symbol,

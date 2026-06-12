@@ -25,7 +25,7 @@ export default function SettingsPage() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     preferences: true,
     appearance: true,
-    sessions: false,
+    sessions: true,
     criteria: true,
     mistakes: true,
     assets: true,
@@ -270,13 +270,36 @@ export default function SettingsPage() {
               <button onClick={() => toggleSection('sessions')} className="w-full flex justify-between items-center p-4 md:p-6 hover:bg-background-secondary/30 transition-colors">
                 <div className="text-left">
                   <h3 className="text-lg font-semibold">Trading Sessions</h3>
-                  <p className="text-xs text-text-muted">Customize session windows (e.g. My NYSE 10:00-16:00 UTC).</p>
+                  <p className="text-xs text-text-muted">Customize the sessions you tag trades with.</p>
                 </div>
                 {expandedSections.sessions ? <ChevronUp className="h-5 w-5 text-text-muted"/> : <ChevronDown className="h-5 w-5 text-text-muted"/>}
               </button>
               <div className={`transition-all duration-300 ease-in-out ${expandedSections.sessions ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
-                <CardContent className="space-y-4 pt-0 pb-6 px-4 md:px-6">
-                  <p className="text-sm text-text-muted">Default sessions are managed by the system. Custom session editing will be available in the next update.</p>
+                <CardContent className="space-y-3 pt-0 pb-6 px-4 md:px-6">
+                  <div className="flex gap-2">
+                    <Input placeholder="New session..." value={newItemInputs['sessions_list'] || ""} onChange={e => setNewItemInputs(p => ({...p, sessions_list: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddListItem('sessions_list')} className="h-9" />
+                    <Button size="sm" onClick={() => handleAddListItem('sessions_list')}><Plus className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                    {settings?.sessions_list?.map((item: any) => (
+                      <div key={item.id} className="flex justify-between items-center gap-2 p-2 bg-background-secondary rounded border border-border">
+                        {editingItem?.listName === 'sessions_list' && editingItem?.id === item.id ? (
+                          <div className="flex-1 flex gap-2">
+                            <Input value={editingItem.value} onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)} onKeyDown={e => e.key === 'Enter' && handleSaveEdit('sessions_list')} className="h-8 text-sm" autoFocus />
+                            <Button size="sm" variant="secondary" onClick={() => handleSaveEdit('sessions_list')}>Save</Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-sm truncate flex-1">{item.label}</span>
+                            <div className="flex items-center">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={() => handleEditListItem('sessions_list', item)}><Pencil className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('sessions_list', item.id || "")}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </div>
             </Card>

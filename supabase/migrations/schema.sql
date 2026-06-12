@@ -87,6 +87,7 @@ CREATE TABLE user_settings (
   mistake_categories_list jsonb DEFAULT '[]',
   broker_list jsonb DEFAULT '[]',
   execution_platforms_list jsonb DEFAULT '[]',
+  sessions_list jsonb DEFAULT '[]',
   updated_at timestamptz DEFAULT now()
 );
 
@@ -200,7 +201,8 @@ BEGIN
     asset_list, 
     mistake_categories_list, 
     broker_list, 
-    execution_platforms_list
+    execution_platforms_list,
+    sessions_list
   ) VALUES (
     new.id,
     '[
@@ -328,6 +330,13 @@ BEGIN
       {"id":"1","name":"CTrader"},
       {"id":"2","name":"MetaTrader 5"},
       {"id":"3","name":"MetaTrader 4"}
+    ]'::jsonb,
+    '[
+      {"id":"asia","label":"Asia"},
+      {"id":"london","label":"London"},
+      {"id":"nyse","label":"NYSE"},
+      {"id":"overlap","label":"London/NYSE Overlap"},
+      {"id":"off-hours","label":"Off-Hours"}
     ]'::jsonb
   );
   

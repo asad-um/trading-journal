@@ -105,6 +105,7 @@ export default function TradesPage() {
   };
 
   const strategies = Array.from(new Set(trades.map(t => t.strategy).filter(Boolean))) as string[];
+  const sessions = Array.from(new Set(trades.map(t => t.session).filter(Boolean))) as string[];
   const filteredTrades = isHydrated ? applyTradeFilters(trades, filters) : trades;
 
   const getStatusColor = (status: string) => {
@@ -131,6 +132,7 @@ export default function TradesPage() {
           clearFilters={clearFilters}
           activeFilterCount={activeFilterCount}
           strategies={strategies}
+          sessions={sessions.length > 0 ? sessions : undefined}
         />
 
         {isLoading ? (

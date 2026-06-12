@@ -16,18 +16,27 @@
 | Batch 4 | Shared trade filters (Playbook + Trade Log), 3 max images with flexible labels | ✅ Pushed |
 | Batch 5 | Playbooks nested customization in Settings, expand asset list | ✅ Pushed |
 | Batch 6 | Fix MASTER_FIX SQL cascade error, fix password reset flow to force new password | ✅ Pushed |
+| Batch 7 | Fix Select empty-value crash, collapsible Playbooks, sessions customization, image label dropdown, reset-password middleware fix | ✅ Pushed |
 
 ### Outstanding Issues from User Feedback
-1. **Playbooks Customization** — Settings tab exists but uses flat "Strategy | Playbook" strings. Need nested strategy/playbook editing (add/edit/delete parent strategies and child playbooks).
-2. **More Assets** — Add GER40, NIKKEI, and additional global instruments beyond current list.
-3. **Password Reset Flow Bug** — Reset link logs user in directly without prompting for new password. Need dedicated reset handler.
-4. **MASTER_FIX SQL Error** — `DROP FUNCTION recalculate_balance_v2()` fails because triggers depend on it. Need to drop triggers first or use CASCADE. ✅ Fixed by dropping `tr_trades_balance` and `tr_account_events_balance` before dropping the function.
+1. **Playbooks Customization** — Settings tab exists but uses flat "Strategy | Playbook" strings. Need nested strategy/playbook editing (add/edit/delete parent strategies and child playbooks). ✅ Implemented in Batch 5/7.
+2. **More Assets** — Add GER40, NIKKEI, and additional global instruments beyond current list. ✅ Implemented in Batch 5.
+3. **Password Reset Flow Bug** — Reset link logs user in directly without prompting for new password. Need dedicated reset handler. ✅ `/reset-password` created + middleware updated.
+4. **MASTER_FIX SQL Error** — `DROP FUNCTION recalculate_balance_v2()` fails because triggers depend on it. ✅ Fixed by dropping `tr_trades_balance` and `tr_account_events_balance` before dropping the function.
 
 ### Batch 6 Implementation Notes
 - Created `/reset-password` page that handles PKCE `code` query param and legacy hash-token recovery flows.
 - Updated forgot-password email `redirectTo` from `/login` to `/reset-password`.
 - Reset page validates link, shows new-password form with confirmation, then calls `supabase.auth.updateUser({ password })`.
 - Fixed `MASTER_FIX_2026_06_11.sql` Section 2 trigger/function drop order to avoid `2BP01` dependency error.
+
+### Batch 7 Implementation Notes
+- Fixed `SelectItem value=""` crash in `TradeFiltersPanel` by using `"all"` sentinel value.
+- Made Strategy Playbooks editor card collapsible like other Settings sections.
+- Replaced placeholder Trading Sessions text with real editable `sessions_list` in Settings; added `sessions_list` to `UserSettings`, `schema.sql`, `handle_new_user()` trigger, `MASTER_FIX`, and migration `batch6_sessions_list.sql`.
+- Refined criteria auto-fill: now syncs checklist with user's settings criteria list while preserving existing checked state, instead of force-checking all boxes.
+- Replaced free-text image caption inputs with Pre-Trade/Post-Trade dropdown selects.
+- Fixed `/reset-password` not loading from email link by adding the route to `middleware.ts` auth-route allowlist so unauthenticated users can reach it.
 
 ## Session: 2026-06-11
 

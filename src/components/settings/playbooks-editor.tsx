@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, ChevronRight, ChevronDown, FolderOpen, BookOpen } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronRight, ChevronDown, ChevronUp, FolderOpen, BookOpen } from "lucide-react";
 import { StrategyPlaybook } from "@/types";
 
 interface PlaybooksEditorProps {
@@ -19,6 +19,7 @@ export function StrategyPlaybooksEditor({ strategies, onChange }: PlaybooksEdito
   const [newPlaybookInputs, setNewPlaybookInputs] = useState<Record<string, string>>({});
   const [expandedStrategies, setExpandedStrategies] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<{ type: 'strategy' | 'playbook'; strategyId: string; playbookId?: string; value: string } | null>(null);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const normalized = strategies.length > 0 ? strategies : [];
 
@@ -67,12 +68,20 @@ export function StrategyPlaybooksEditor({ strategies, onChange }: PlaybooksEdito
   };
 
   return (
-    <Card className="border-border/60 shadow-sm bg-background">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base md:text-lg">Strategy Playbooks</CardTitle>
-        <CardDescription className="text-xs md:text-sm">Organize your trading strategies and the playbooks under each one.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card className="border-border/60 shadow-sm bg-background overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setIsExpanded(prev => !prev)}
+        className="w-full flex justify-between items-center p-4 md:p-6 hover:bg-background-secondary/30 transition-colors"
+      >
+        <div className="text-left">
+          <CardTitle className="text-base md:text-lg">Strategy Playbooks</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Organize your trading strategies and the playbooks under each one.</CardDescription>
+        </div>
+        {isExpanded ? <ChevronUp className="h-5 w-5 text-text-muted" /> : <ChevronDown className="h-5 w-5 text-text-muted" />}
+      </button>
+      <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+      <CardContent className="space-y-4 pt-0 pb-6 px-4 md:px-6">
         <div className="flex gap-2">
           <Input placeholder="New strategy name..." value={newStrategyName} onChange={e => setNewStrategyName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addStrategy()} className="h-9" />
           <Button size="sm" onClick={addStrategy}><Plus className="h-4 w-4" /></Button>
@@ -128,6 +137,7 @@ export function StrategyPlaybooksEditor({ strategies, onChange }: PlaybooksEdito
           )}
         </div>
       </CardContent>
+      </div>
     </Card>
   );
 }

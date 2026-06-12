@@ -51,6 +51,7 @@ export default function PlaybookPage() {
   }, []);
 
   const strategies = Array.from(new Set(trades.map(t => t.strategy).filter(Boolean))) as string[];
+  const sessions = Array.from(new Set(trades.map(t => t.session).filter(Boolean))) as string[];
   const filteredTrades = isHydrated ? applyTradeFilters(trades, filters) : trades;
 
   if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
@@ -71,6 +72,7 @@ export default function PlaybookPage() {
           clearFilters={clearFilters}
           activeFilterCount={activeFilterCount}
           strategies={strategies}
+          sessions={sessions.length > 0 ? sessions : undefined}
         />
 
         {filteredTrades.length === 0 ? (

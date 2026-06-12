@@ -148,6 +148,12 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 | 2026-06-12 | Expanded Asset List + Migration | `supabase/migrations/batch5_playbooks_and_assets.sql`, `lib/defaults.ts` | ✅ Applied |
 | 2026-06-12 | MASTER_FIX SQL Cascade Fix | `supabase/migrations/MASTER_FIX_2026_06_11.sql` | ✅ Applied |
 | 2026-06-12 | Dedicated /reset-password Page | `login/page.tsx`, `reset-password/page.tsx` | ✅ Applied |
+| 2026-06-12 | Reset-Password Middleware Allowlist | `middleware.ts` | ✅ Applied |
+| 2026-06-12 | Select Empty-Value Crash Fix | `trade-filters.tsx` | ✅ Applied |
+| 2026-06-12 | Collapsible Playbooks Editor | `playbooks-editor.tsx` | ✅ Applied |
+| 2026-06-12 | Customizable Trading Sessions | `settings/page.tsx`, `types/index.ts`, `schema.sql`, `defaults.ts` | ✅ Applied |
+| 2026-06-12 | Criteria Auto-fill Refined | `trade-form.tsx` | ✅ Applied |
+| 2026-06-12 | Image Label Dropdown | `trade-form.tsx` | ✅ Applied |
 
 ---
 
