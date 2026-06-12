@@ -13,9 +13,12 @@ import { format } from "date-fns";
 import { usePrivacy } from "@/components/privacy-provider";
 import { useTradeFilters, applyTradeFilters } from "@/hooks/use-trade-filters";
 import { TradeFiltersPanel } from "@/components/trades/trade-filters";
+import { UserSettings } from "@/types";
+import { normalizeStrategiesList } from "@/lib/defaults";
 
 export default function PlaybookPage() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { blurMoney } = usePrivacy();
   const { filters, setFilter, clearFilters, activeFilterCount, isHydrated } = useTradeFilters();
@@ -28,11 +31,16 @@ export default function PlaybookPage() {
       const { data: activePort } = await supabase.from('portfolios').select('id').eq('user_id', user.id).eq('is_active', true).single();
       if (!activePort) { setIsLoading(false); return; }
 
-      const { data } = await supabase
-        .from("trades")
-        .select("id, trade_date, symbol, direction, strategy, sub_strategy, status, net_pnl, session, pre_trade_images, post_trade_images")
-        .eq("portfolio_id", activePort.id)
-        .order("trade_date", { ascending: false });
+      const [{ data }, { data: settingsRes }] = await Promise.all([
+        supabase
+          .from("trades")
+          .select("id, trade_date, symbol, direction, strategy, sub_strategy, status, net_pnl, session, pre_trade_images, post_trade_images")
+          .eq("portfolio_id", activePort.id)
+          .order("trade_date", { ascending: false }),
+        supabase.from('user_settings').select('*').eq('user_id', user.id).single()
+      ]);
+
+      if (settingsRes) setSettings(settingsRes);
 
       if (data) {
         // Filter out trades with no images
@@ -50,8 +58,16 @@ export default function PlaybookPage() {
     return () => { supabase.removeChannel(channel); }
   }, []);
 
-  const strategies = Array.from(new Set(trades.map(t => t.strategy).filter(Boolean))) as string[];
-  const sessions = Array.from(new Set(trades.map(t => t.session).filter(Boolean))) as string[];
+  const configuredStrategies = settings?.strategies_list
+    ? normalizeStrategiesList(settings.strategies_list).map(s => s.name)
+    : [];
+  const tradeStrategies = Array.from(new Set(trades.map(t => t.strategy).filter(Boolean))) as string[];
+  const strategies = Array.from(new Set([...configuredStrategies, ...tradeStrategies]));
+
+  const configuredSessions = settings?.sessions_list?.map((s: any) => s.label) || [];
+  const tradeSessions = Array.from(new Set(trades.map(t => t.session).filter(Boolean))) as string[];
+  const sessions = Array.from(new Set([...configuredSessions, ...tradeSessions]));
+
   const filteredTrades = isHydrated ? applyTradeFilters(trades, filters) : trades;
 
   if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
