@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PrivacyProvider } from "@/components/privacy-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const robotoMono = Roboto_Mono({ subsets: ["latin"], variable: "--font-roboto-mono" });
@@ -41,6 +42,7 @@ export default function RootLayout({
           </PrivacyProvider>
           </TooltipProvider>
           <Toaster />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
