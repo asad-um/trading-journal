@@ -487,6 +487,176 @@ Recommendation:       Size down 20% today
 
 ---
 
+## 5. User-Requested Features
+
+### 5.1 Account Comparison Toggle (Statistics)
+
+**Feature:** Allow users to compare performance across multiple portfolios/accounts side-by-side in the Statistics page.
+
+**Implementation:**
+- Portfolio selector dropdown in Statistics header
+- Toggle between "Combined View" and "Per-Account View"
+- Side-by-side bar charts comparing win rates, profit factors, drawdowns
+- Account correlation analysis (does Account A perform when Account B doesn't?)
+
+**Insight:** "Your Forex account is up 12% while your Crypto account is down 8%. Consider rebalancing."
+
+### 5.2 Trade Replay & Chart Heatmap Overlay
+
+**Feature:** Upload trade screenshots → AI analyzes entry/exit zones → Heatmap overlay showing where you typically enter and exit.
+
+**Implementation:**
+- Image upload for each trade setup
+- Coordinate mapping: user clicks entry/exit points on chart image
+- Aggregated heatmap across all trades per asset
+- "You enter XAUUSD 73% of the time in the upper 20% of the daily range"
+
+### 5.3 Weekly AI Coaching Reports
+
+**Feature:** Auto-generated weekly report emailed/pushed to user with specific, actionable insights.
+
+**Report Contents:**
+- Top 3 things you did well
+- Top 3 areas needing improvement
+- Specific trade review recommendations
+- Discipline score trend
+- Goal progress tracker
+- Next week's focus area
+
+**Example:** "This week you took 5 trades without confirming volume. Your volume-confirmed trades had a 78% win rate. Next week: No entry without volume confluence."
+
+### 5.4 Gamification System
+
+**Badges (Achievement System):**
+- `"10 Trade Win Streak"` — 10 consecutive wins
+- `"Discipline Master"` — No rule breaks for 30 days
+- `"Risk Manager"` — No single loss > 2% for 60 days
+- `"Early Bird"` — Check in before 7 AM for 14 days
+- `"Reviewer"` — Review 5 past trades weekly for 4 weeks
+- `"Psychology Pro"` — Mood score avg > 4.0 for 30 days
+- `"Diversified"` — Traded 5+ different assets in a month
+
+**XP & Leveling:**
+- XP per trade logged: +10
+- XP per daily check-in: +5
+- XP per review completed: +20
+- XP per badge earned: +100
+- Level titles: Novice → Apprentice → Trader → Senior Trader → Elite → Master → Legend
+
+**Daily Quests:**
+- `"Morning Routine"` — Complete pre-market checklist
+- `"Trade Logger"` — Log all today's trades before midnight
+- `"Mistake Review"` — Review yesterday's losing trade
+- `"Check-In Hero"` — Daily mental check-in
+- `"Edge Hunter"` — Identify one new pattern in your data
+
+**Leaderboards (Opt-in Anonymous):**
+- Monthly win rate percentile
+- Profit factor percentile
+- Discipline score percentile
+- "You rank in the top 15% of traders this month"
+
+### 5.5 Morning Routine Checklist
+
+**Feature:** Mandatory pre-market checklist that must be completed before "unlocking" new trade entry for the day.
+
+**Checklist Items (customizable):**
+- [ ] News & economic calendar scanned
+- [ ] Key levels marked on charts
+- [ ] HTF bias determined
+- [ ] Mindset check (mood 3+/5)
+- [ ] Yesterday's mistakes reviewed
+- [ ] Risk parameters confirmed
+- [ ] Correlated assets checked
+
+**Implementation:**
+- Modal popup on first "New Trade" click of the day
+- Progress bar showing completion
+- Can be dismissed but tracks "skipped" count
+- Settings to enable/disable requirement
+
+### 5.6 Market Regime Auto-Tagging
+
+**Feature:** Automatically tag each trade with the market condition it was taken in.
+
+**Regime Types:**
+- **Trending** — ADX > 25, clear directional bias
+- **Choppy/Range** — ADX < 20, price oscillating
+- **News-Driven** — High volatility spike, economic calendar hit
+- **Breakout** — Price breaking key structure
+- **Reversal** — Price reversing from extreme
+
+**Visualization:**
+- Win rate BY regime in Statistics
+- "You win 71% in breakouts but only 34% in choppy markets"
+- Suggested regime-filtered position sizing
+
+### 5.7 Multi-Device Sync & Offline Mode
+
+**Feature:** Full PWA with offline trade entry and cross-device sync.
+
+**Implementation:**
+- Service worker with background sync
+- IndexedDB for offline storage
+- Queue system: offline trades sync when reconnected
+- Conflict resolution for concurrent edits
+- Mobile-optimized trade form (fewer fields, voice input)
+
+### 5.8 Advanced Tilt Detection & Circuit Breakers
+
+**Algorithm:**
+```
+IF consecutive_losses >= 3 
+   AND mood_score <= 2 
+   AND session != preferred_session
+   AND daily_pnl < -daily_limit
+   THEN trigger_cooldown()
+```
+
+**Circuit Breakers:**
+- **Yellow Alert:** Warning banner with breathing exercise prompt
+- **Orange Alert:** 30-minute mandatory cooldown timer
+- **Red Alert:** Trade entry locked for 2 hours, requires coaching review
+- **Daily Loss Limit:** Auto-lock after X% daily loss
+
+**Psychological Interventions:**
+- Forced 5-minute break with guided breathing
+- "Why are you trading right now?" reflection prompt
+- Historical tilt cost tracker ("Tilt has cost you $X this month")
+
+### 5.9 Post-Trade Interview System
+
+**Feature:** 3-question mandatory popup after marking a trade as closed.
+
+**Questions:**
+1. "How did you feel during this trade?" (1-5 scale: Panic → Calm → Euphoric)
+2. "Did you follow your plan exactly?" (Yes / Partial / No)
+3. "What's the ONE lesson from this trade?" (Free text)
+
+**Outputs:**
+- Emotional journey map per trade
+- Plan adherence score over time
+- Lesson archive with search/filter
+- Quarterly "Emotional Audit" report
+
+### 5.10 Webhook/API Broker Integration
+
+**Supported Platforms:**
+- **MetaTrader 4/5** — EA pushes trades via webhook
+- **TradingView** — Webhook alerts → auto-log trade ideas
+- **Interactive Brokers (IBKR)** — API sync
+- **cTrader** — cBot webhook integration
+
+**Auto-Import Fields:**
+- Symbol, direction, entry price, exit price
+- SL/TP levels
+- Position size
+- Open/close timestamps
+
+**Benefit:** Eliminates manual entry errors, captures exact prices, real-time sync.
+
+---
+
 ## 4. Quick Wins (Do These First)
 
 **Can implement in <30 minutes each:**
@@ -495,11 +665,3 @@ Recommendation:       Size down 20% today
 2. **Monthly performance table** → Reuse existing stats calculation
 3. **Consecutive streak display** → Simple array loop
 4. **Sharpe ratio** → Formula uses data you already have
-5. **Trade duration** → `trade_date` + close date = hold time
-
-**Expected impact:** Users immediately feel the app is more professional and useful.
-
----
-
-*Last updated: 2026-06-12*
-*Next review: After Phase 1 completion*
