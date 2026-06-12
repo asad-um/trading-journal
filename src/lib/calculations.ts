@@ -87,14 +87,6 @@ export function calculateGrossPnL(
 }
 
 /**
- * Calculates Net PnL deducting fees.
- */
-export function calculateNetPnL(grossPnL: number, feeAmount: number, feeInPips: boolean, pipValue: number = 0): number {
-  const totalFee = feeInPips ? (feeAmount * pipValue) : feeAmount;
-  return grossPnL - totalFee;
-}
-
-/**
  * Calculates the actual achieved RR.
  */
 export function calculateActualRR(netPnL: number, riskAmount: number): number {

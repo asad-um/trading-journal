@@ -59,9 +59,7 @@ export default function StatisticsPage() {
     const dd = calculateMaxDrawdown(trades, profile.starting_balance);
     
     const closed = trades.filter(t => ['Closed - Win', 'Closed - Loss', 'Breakeven', 'Partial'].includes(t.status));
-    const grossPnL = closed.reduce((acc, t) => acc + t.gross_pnl, 0);
     const netPnL = closed.reduce((acc, t) => acc + t.net_pnl, 0);
-    const totalFees = grossPnL - netPnL; // Rough estimate of fees
     
     const wins = closed.filter(t => t.net_pnl > 0);
     const losses = closed.filter(t => t.net_pnl < 0);
@@ -195,7 +193,7 @@ export default function StatisticsPage() {
       .filter(t => t.total >= 2) // Need at least 2 trades for statistical relevance
       .sort((a, b) => b.winRate - a.winRate);
 
-    return { wr, pf, dd, grossPnL, netPnL, totalFees, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency, bestTrades, worstTrades, timeframePerformance };
+    return { wr, pf, dd, netPnL, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency, bestTrades, worstTrades, timeframePerformance };
   }, [profile, trades]);
 
   if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
@@ -299,12 +297,6 @@ export default function StatisticsPage() {
                     <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">Drawdown <InfoTooltip text="Largest peak-to-trough drop in balance." /></p>
                     <p className="font-mono text-lg md:text-3xl tracking-tight font-black text-loss truncate">
                       -{blurMoney(stats.dd.maxDrawdownAmount)}
-                    </p>
-                  </div>
-                  <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">
-                    <p className="text-[10px] md:text-xs font-semibold text-text-muted mb-1 md:mb-2 flex items-center uppercase tracking-wider group-hover:text-foreground transition-colors truncate">Fees <InfoTooltip text="Estimated total fees deducted from Gross P&L." /></p>
-                    <p className="font-mono text-lg md:text-3xl tracking-tight font-black text-loss truncate">
-                      -{blurMoney(stats.totalFees)}
                     </p>
                   </div>
                   <div className="p-3 md:p-5 bg-gradient-to-br from-background-secondary to-background rounded-xl border border-border/60 hover:border-primary/40 hover:shadow-[0_0_15px_rgba(var(--primary),0.05)] transition-all duration-300 group overflow-hidden">

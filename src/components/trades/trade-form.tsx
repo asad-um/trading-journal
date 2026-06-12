@@ -6,7 +6,7 @@ import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tradeSchema, TradeFormValues } from "@/lib/validations/trade";
 import { supabase } from "@/lib/supabase";
-import { calculateRR, calculateWeightedRR, calculateRiskAmount, calculateGrossPnL, calculateNetPnL, detectSession, validateTPSplits } from "@/lib/calculations";
+import { calculateRR, calculateWeightedRR, calculateRiskAmount, calculateGrossPnL, detectSession, validateTPSplits } from "@/lib/calculations";
 import { UserSettings, Profile } from "@/types";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -67,8 +67,6 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       num_tp_levels: 1,
       tp_levels: [{ level: 1, price: 0, position_percent: 100, rr: 0, potential_pnl: 0, hit: false }],
       risk_percentage: 0.5,
-      fee_amount: 0,
-      fee_in_pips: false,
       status: "Open",
       criteria_checked: [],
       tps_hit: [],
@@ -421,8 +419,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
 
       const sessionDetected = detectSession(data.trade_time_utc || "14:30");
 
-      const gross_pnl = calculateGrossPnL(data.tp_levels.map((t: any) => ({ rr: t.rr, positionPercent: t.position_percent })), riskAmount, Array.isArray(data.tps_hit) ? data.tps_hit : [], !!data.sl_hit);
-      const net_pnl = calculateNetPnL(gross_pnl, data.fee_amount, data.fee_in_pips, data.pip_value);
+      const net_pnl = calculateGrossPnL(data.tp_levels.map((t: any) => ({ rr: t.rr, positionPercent: t.position_percent })), riskAmount, Array.isArray(data.tps_hit) ? data.tps_hit : [], !!data.sl_hit);
       const actual_rr_achieved = riskAmount ? (net_pnl / riskAmount) : 0;
       const weighted_avg_rr_planned = calculateWeightedRR(data.tp_levels.map(t => ({ rr: t.rr, positionPercent: t.position_percent })));
 
@@ -432,7 +429,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
         portfolio_id: activePort.id,
         session: sessionDetected,
         risk_amount_usd: riskAmount,
-        gross_pnl,
+        gross_pnl: net_pnl,
         net_pnl,
         actual_rr_achieved,
         weighted_avg_rr_planned,

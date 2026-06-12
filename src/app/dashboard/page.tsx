@@ -48,7 +48,21 @@ export default function DashboardPage() {
       // 2. Fetch the trades strictly for that active portfolio
       const { data: tradesRes } = await supabase.from("trades").select("*").eq("portfolio_id", activePort.id).order("trade_date", { ascending: true });
 
-      // 3. Set the profile state completely using the Active Portfolio data (Not the generic profiles table)
+      // 3. Check if user already checked in today
+      const today = new Date().toISOString().split('T')[0];
+      const { data: checkinRes } = await supabase.from('daily_checkins')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('checkin_date', today)
+        .maybeSingle();
+      
+      if (checkinRes) {
+        setHasCheckedIn(true);
+        setMoodScore(checkinRes.mood_score || 3);
+        setDisciplineScore(checkinRes.discipline_score || 3);
+      }
+
+      // 4. Set the profile state completely using the Active Portfolio data (Not the generic profiles table)
       setProfile(activePort as any);
       if (tradesRes) setTrades(tradesRes);
       
@@ -59,8 +73,9 @@ export default function DashboardPage() {
       const channel = supabase.channel('realtime-dashboard')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => fetchData(true))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'account_events' }, () => fetchData(true))
-        .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'account_events' }, () => fetchData(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_checkins' }, () => fetchData(true))
+      .subscribe();
 
       return () => { supabase.removeChannel(channel); }
   }, []);

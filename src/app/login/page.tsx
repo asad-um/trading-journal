@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Loader2, KeyRound } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -35,10 +36,8 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  const resetForm = useForm<z.infer<typeof resetSchema>>({
-    resolver: zodResolver(resetSchema),
-    defaultValues: { email: "" },
-  });
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetEmailError, setResetEmailError] = useState("");
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
@@ -62,10 +61,24 @@ export default function LoginPage() {
     }
   }
 
-  async function onResetSubmit(values: z.infer<typeof resetSchema>) {
+  async function onResetSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    
+    // Manual validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!resetEmail.trim()) {
+      setResetEmailError("Email is required");
+      return;
+    }
+    if (!emailRegex.test(resetEmail.trim())) {
+      setResetEmailError("Please enter a valid email address");
+      return;
+    }
+    setResetEmailError("");
+    
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
         redirectTo: `${window.location.origin}/login`,
       });
 
@@ -98,34 +111,29 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             {!resetSent ? (
-              <Form {...resetForm}>
-                <form onSubmit={resetForm.handleSubmit(onResetSubmit)} className="space-y-4" autoComplete="off">
-                  <FormField
-                    control={resetForm.control}
+              <form onSubmit={onResetSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input 
+                    id="reset-email"
                     name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="email" 
-                            inputMode="email" 
-                            autoComplete="email" 
-                            autoFocus
-                            placeholder="you@example.com" 
-                            {...field} 
-                            disabled={isLoading} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    type="email" 
+                    inputMode="email" 
+                    autoComplete="email" 
+                    placeholder="you@example.com" 
+                    value={resetEmail}
+                    onChange={(e) => { setResetEmail(e.target.value); if (resetEmailError) setResetEmailError(""); }}
+                    disabled={isLoading} 
+                    className={resetEmailError ? "border-loss focus-visible:ring-loss" : ""}
                   />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Reset Link"}
-                  </Button>
-                </form>
-              </Form>
+                  {resetEmailError && (
+                    <p className="text-xs font-medium text-loss">{resetEmailError}</p>
+                  )}
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Reset Link"}
+                </Button>
+              </form>
             ) : (
               <div className="text-center py-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -137,7 +145,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="justify-center">
             <button 
-              onClick={() => { setIsResetMode(false); setResetSent(false); }}
+              onClick={() => { setIsResetMode(false); setResetSent(false); setResetEmail(""); setResetEmailError(""); }}
               className="text-sm text-primary hover:underline"
             >
               Back to Log In

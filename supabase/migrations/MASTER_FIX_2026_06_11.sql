@@ -6,6 +6,20 @@
 -- ============================================================
 
 -- ============================================================
+-- SECTION 0: Remove deprecated fee/commission columns
+-- ============================================================
+
+-- Fees/commissions/spreads are no longer tracked in the UI.
+-- Remove columns to keep schema clean. They are safe to drop
+-- even if they contain old data because the app no longer references them.
+ALTER TABLE trades DROP COLUMN IF EXISTS commission;
+ALTER TABLE trades DROP COLUMN IF EXISTS spread_cost;
+ALTER TABLE trades DROP COLUMN IF EXISTS fee_amount;
+ALTER TABLE trades DROP COLUMN IF EXISTS fee_in_pips;
+ALTER TABLE trades DROP COLUMN IF EXISTS pip_value;
+ALTER TABLE trades DROP COLUMN IF EXISTS fee_type;
+
+-- ============================================================
 -- SECTION 1: Fix daily_checkins table (missing updated_at)
 -- ============================================================
 
