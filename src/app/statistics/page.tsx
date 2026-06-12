@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { AppLayout } from "@/components/layout/app-layout";
 import { supabase } from "@/lib/supabase";
@@ -14,6 +15,9 @@ import { InfoTooltip } from "@/components/info-tooltip";
 import { usePrivacy } from "@/components/privacy-provider";
 
 export default function StatisticsPage() {
+  const [showStrategyAll, setShowStrategyAll] = useState(false);
+  const [showCriteriaAll, setShowCriteriaAll] = useState(false);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -381,51 +385,79 @@ export default function StatisticsPage() {
             {/* Edge Analysis Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Strategy & Playbook Edge</CardTitle>
-                  <CardDescription>Win rates based on your specific setups.</CardDescription>
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-base md:text-lg">Strategy & Playbook Edge</CardTitle>
+                      <CardDescription className="text-xs md:text-sm">Win rates based on your specific setups.</CardDescription>
+                    </div>
+                    {(stats.strategyPerformance || []).length > 3 && (
+                      <button 
+                        onClick={() => setShowStrategyAll(!showStrategyAll)}
+                        className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 px-2 py-1 rounded-md hover:bg-primary/10 transition-colors"
+                      >
+                        {showStrategyAll ? <>Compact <ChevronUp className="h-3 w-3"/></> : <>Show All <ChevronDown className="h-3 w-3"/></>}
+                      </button>
+                    )}
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className={`space-y-3 transition-all duration-300 ${showStrategyAll ? 'max-h-[400px] overflow-y-auto pr-1' : 'max-h-[180px] overflow-hidden'}`}>
                   {(stats.strategyPerformance || []).length === 0 ? (
                     <p className="text-sm text-text-muted text-center py-4">No strategy data available.</p>
                   ) : (
-                    stats.strategyPerformance.map((strat: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border overflow-hidden">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate pr-2">{strat.name}</p>
-                          <p className="text-xs text-text-muted mt-1">{strat.total} trades</p>
+                    stats.strategyPerformance
+                      .slice(0, showStrategyAll ? undefined : 3)
+                      .map((strat: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
+                        <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border overflow-hidden">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm truncate pr-2">{strat.name}</p>
+                            <p className="text-xs text-text-muted mt-1">{strat.total} trades</p>
+                          </div>
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <p className={`font-bold text-sm whitespace-nowrap ${strat.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(strat.winRate || 0).toFixed(1)}%</p>
+                            <p className={`text-xs font-mono mt-1 whitespace-nowrap ${strat.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{strat.netPnL > 0 ? "+" : ""}{blurMoney(strat.netPnL)}</p>
+                          </div>
                         </div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          <p className={`font-bold text-sm whitespace-nowrap ${strat.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(strat.winRate || 0).toFixed(1)}%</p>
-                          <p className={`text-xs font-mono mt-1 whitespace-nowrap ${strat.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{strat.netPnL > 0 ? "+" : ""}{blurMoney(strat.netPnL)}</p>
-                        </div>
-                      </div>
-                    ))
+                      ))
                   )}
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Confluence & Criteria Impact</CardTitle>
-                  <CardDescription>How specific validations impact your win rate.</CardDescription>
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-base md:text-lg">Confluence & Criteria Impact</CardTitle>
+                      <CardDescription className="text-xs md:text-sm">How specific validations impact your win rate.</CardDescription>
+                    </div>
+                    {(stats.criteriaPerformance || []).length > 3 && (
+                      <button 
+                        onClick={() => setShowCriteriaAll(!showCriteriaAll)}
+                        className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 px-2 py-1 rounded-md hover:bg-primary/10 transition-colors"
+                      >
+                        {showCriteriaAll ? <>Compact <ChevronUp className="h-3 w-3"/></> : <>Show All <ChevronDown className="h-3 w-3"/></>}
+                      </button>
+                    )}
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                <CardContent className={`space-y-3 transition-all duration-300 ${showCriteriaAll ? 'max-h-[400px] overflow-y-auto pr-1' : 'max-h-[180px] overflow-hidden'}`}>
                   {(stats.criteriaPerformance || []).length === 0 ? (
                     <p className="text-sm text-text-muted text-center py-4">No criteria data available.</p>
                   ) : (
-                    stats.criteriaPerformance.map((crit: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border overflow-hidden">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate pr-2">{crit.name}</p>
-                          <p className="text-xs text-text-muted mt-1">Present in {crit.total} trades</p>
+                    stats.criteriaPerformance
+                      .slice(0, showCriteriaAll ? undefined : 3)
+                      .map((crit: { name: string; winRate: number; total: number; netPnL: number }, i: number) => (
+                        <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border overflow-hidden">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm truncate pr-2">{crit.name}</p>
+                            <p className="text-xs text-text-muted mt-1">Present in {crit.total} trades</p>
+                          </div>
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <p className={`font-bold text-sm whitespace-nowrap ${crit.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(crit.winRate || 0).toFixed(1)}%</p>
+                            <p className={`text-xs font-mono mt-1 whitespace-nowrap ${crit.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{crit.netPnL > 0 ? "+" : ""}{blurMoney(crit.netPnL)}</p>
+                          </div>
                         </div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          <p className={`font-bold text-sm whitespace-nowrap ${crit.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(crit.winRate || 0).toFixed(1)}%</p>
-                          <p className={`text-xs font-mono mt-1 whitespace-nowrap ${crit.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{crit.netPnL > 0 ? "+" : ""}{blurMoney(crit.netPnL)}</p>
-                        </div>
-                      </div>
-                    ))
+                      ))
                   )}
                 </CardContent>
               </Card>
@@ -433,9 +465,9 @@ export default function StatisticsPage() {
 
             {/* Timeframe Edge Analysis */}
             <Card>
-              <CardHeader>
-                <CardTitle>Timeframe Edge Analysis</CardTitle>
-                <CardDescription>Win rates by HTF bias, Entry TF, and combined combinations.</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Timeframe Edge Analysis</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Win rates by HTF bias, Entry TF, and combined combinations.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                 {(stats.timeframePerformance || []).length === 0 ? (
@@ -460,8 +492,8 @@ export default function StatisticsPage() {
             {/* Notable Trades References */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               <Card className="border-border/60 shadow-sm bg-background">
-                <CardHeader>
-                  <CardTitle className="text-win flex items-center gap-2">Top 3 Best Trades</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-win flex items-center gap-2 text-base md:text-lg">Top 3 Best Trades</CardTitle>
                   <CardDescription>Your most profitable setups contributing to your edge.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -495,8 +527,8 @@ export default function StatisticsPage() {
               </Card>
 
               <Card className="border-border/60 shadow-sm bg-background">
-                <CardHeader>
-                  <CardTitle className="text-loss flex items-center gap-2">Top 3 Worst Trades</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-loss flex items-center gap-2 text-base md:text-lg">Top 3 Worst Trades</CardTitle>
                   <CardDescription>Your heaviest losses. Review these for discipline leaks.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">

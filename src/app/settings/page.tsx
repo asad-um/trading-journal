@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
-import { Loader2, Download, Plus, Trash2, UploadCloud } from "lucide-react";
+import { Loader2, Download, Plus, Trash2, UploadCloud, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SettingsPage() {
@@ -20,8 +20,18 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
 
+  // Expanded sections state
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    preferences: true,
+    appearance: true,
+    sessions: false,
+  });
+
   // Temporary states for new list items
   const [newItemInputs, setNewItemInputs] = useState<Record<string, string>>({});
+
+  // Edit mode for list items
+  const [editingItem, setEditingItem] = useState<{ listName: string; id: string; value: string } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -106,6 +116,10 @@ export default function SettingsPage() {
     setNewItemInputs(prev => ({ ...prev, [listName]: "" }));
   };
 
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   const handleRemoveListItem = (listName: keyof UserSettings, identifier: string, isAsset: boolean = false) => {
     if (!settings) return;
     const currentList = Array.isArray(settings[listName]) ? (settings[listName] as { id?: string; name?: string; label?: string; symbol?: string; asset_class?: string; custom?: boolean; [key: string]: unknown }[]) : [];
@@ -124,6 +138,52 @@ export default function SettingsPage() {
     }
     
     handleUpdateList(listName, newList);
+  };
+
+  const handleEditListItem = (listName: keyof UserSettings, item: any, isAsset: boolean = false) => {
+    const id = isAsset ? item.symbol : item.id;
+    const value = isAsset ? `${item.symbol}, ${item.asset_class}` : (item.label || item.name);
+    setEditingItem({ listName, id, value });
+  };
+
+  const handleSaveEdit = async (listName: keyof UserSettings, isAsset: boolean = false) => {
+    if (!settings || !editingItem || editingItem.listName !== listName) return;
+    
+    const currentList = Array.isArray(settings[listName]) ? [...(settings[listName] as any[])] : [];
+    let newList;
+
+    if (isAsset) {
+      const parts = editingItem.value.split(",");
+      const symbol = parts[0].trim().toUpperCase();
+      const asset_class = parts.length > 1 ? parts[1].trim() : "Other";
+      
+      // Check duplicate
+      if (currentList.some(i => i.symbol === symbol && i.symbol !== editingItem.id)) {
+        toast({ title: "Exists", description: "Asset already exists.", variant: "destructive" });
+        return;
+      }
+      
+      newList = currentList.map(i => 
+        i.symbol === editingItem.id 
+          ? { ...i, symbol, asset_class, custom: true }
+          : i
+      );
+    } else {
+      const label = editingItem.value.trim();
+      // Check duplicate
+      if (currentList.some(i => (i.label === label || i.name === label) && i.id !== editingItem.id)) {
+        toast({ title: "Exists", description: "Item already exists.", variant: "destructive" });
+        return;
+      }
+      newList = currentList.map(i => 
+        i.id === editingItem.id 
+          ? { ...i, label, name: label }
+          : i
+      );
+    }
+
+    await handleUpdateList(listName, newList);
+    setEditingItem(null);
   };
 
   const handleExportCSV = async () => {
@@ -170,84 +230,121 @@ export default function SettingsPage() {
           </TabsList>
           
           {/* TAB 1: Preferences */}
-          <TabsContent value="general" className="space-y-8 pt-4 outline-none">
-            <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Trade Preferences</CardTitle>
-                <CardDescription>Default settings applied when you log a new trade.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-text-muted font-semibold">Default Risk (%)</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        type="number" 
-                        step="0.1" 
-                        value={profile?.default_risk_percentage || 0} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, default_risk_percentage: parseFloat(e.target.value) } : null)}
-                        className="bg-background-secondary border-border/50 focus-visible:ring-primary/50"
-                      />
-                      <Button variant="secondary" onClick={() => handleUpdateProfile('default_risk_percentage', profile?.default_risk_percentage || 0)}>Save</Button>
-                    </div>
-                    <p className="text-xs text-text-muted">Calculates risk amount automatically based on your active portfolio balance.</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-text-muted font-semibold">Display Currency</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        type="text" 
-                        value={profile?.currency || 'USD'} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, currency: e.target.value } : null)}
-                        className="bg-background-secondary border-border/50 focus-visible:ring-primary/50 uppercase"
-                      />
-                      <Button variant="secondary" onClick={() => handleUpdateProfile('currency', profile?.currency || 'USD')}>Save</Button>
-                    </div>
-                    <p className="text-xs text-text-muted">Visual label only (e.g. USD, EUR, GBP).</p>
-                  </div>
+          <TabsContent value="general" className="space-y-6 pt-4 outline-none">
+            {/* Trade Preferences - Compact */}
+            <Card className="border-border/60 shadow-sm bg-background overflow-hidden">
+              <button 
+                onClick={() => toggleSection('preferences')}
+                className="w-full flex justify-between items-center p-4 md:p-6 hover:bg-background-secondary/30 transition-colors"
+              >
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold">Trade Preferences</h3>
+                  <p className="text-xs text-text-muted">Default settings applied when you log a new trade.</p>
                 </div>
-              </CardContent>
+                {expandedSections.preferences ? <ChevronUp className="h-5 w-5 text-text-muted"/> : <ChevronDown className="h-5 w-5 text-text-muted"/>}
+              </button>
+              <div className={`transition-all duration-300 ease-in-out ${expandedSections.preferences ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+                <CardContent className="space-y-4 pt-0 pb-6 px-4 md:px-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-text-muted font-semibold">Default Risk (%)</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type="number" 
+                          step="0.1" 
+                          value={profile?.default_risk_percentage || 0} 
+                          onChange={(e) => setProfile(prev => prev ? { ...prev, default_risk_percentage: parseFloat(e.target.value) } : null)}
+                          className="bg-background-secondary border-border/50 focus-visible:ring-primary/50 h-9"
+                        />
+                        <Button size="sm" variant="secondary" onClick={() => handleUpdateProfile('default_risk_percentage', profile?.default_risk_percentage || 0)}>Save</Button>
+                      </div>
+                      <p className="text-xs text-text-muted">Calculates risk amount automatically based on your active portfolio balance.</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-text-muted font-semibold">Display Currency</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type="text" 
+                          value={profile?.currency || 'USD'} 
+                          onChange={(e) => setProfile(prev => prev ? { ...prev, currency: e.target.value } : null)}
+                          className="bg-background-secondary border-border/50 focus-visible:ring-primary/50 uppercase h-9"
+                        />
+                        <Button size="sm" variant="secondary" onClick={() => handleUpdateProfile('currency', profile?.currency || 'USD')}>Save</Button>
+                      </div>
+                      <p className="text-xs text-text-muted">Visual label only (e.g. USD, EUR, GBP).</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </div>
             </Card>
 
-            <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Appearance</CardTitle>
-                <CardDescription>Customize the interface theme.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-4">
-                  <Button 
-                    variant={theme === 'light' ? 'default' : 'outline'} 
-                    onClick={() => setTheme('light')}
-                    className={theme === 'light' ? 'bg-primary text-primary-foreground' : 'text-text-muted'}
-                  >
-                    Light Mode
-                  </Button>
-                  <Button 
-                    variant={theme === 'dark' ? 'default' : 'outline'} 
-                    onClick={() => setTheme('dark')}
-                    className={theme === 'dark' ? 'bg-primary text-primary-foreground' : 'text-text-muted'}
-                  >
-                    Dark Mode
-                  </Button>
+            {/* Appearance - Compact */}
+            <Card className="border-border/60 shadow-sm bg-background overflow-hidden">
+              <button 
+                onClick={() => toggleSection('appearance')}
+                className="w-full flex justify-between items-center p-4 md:p-6 hover:bg-background-secondary/30 transition-colors"
+              >
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold">Appearance</h3>
+                  <p className="text-xs text-text-muted">Customize the interface theme.</p>
                 </div>
-              </CardContent>
+                {expandedSections.appearance ? <ChevronUp className="h-5 w-5 text-text-muted"/> : <ChevronDown className="h-5 w-5 text-text-muted"/>}
+              </button>
+              <div className={`transition-all duration-300 ease-in-out ${expandedSections.appearance ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+                <CardContent className="pt-0 pb-6 px-4 md:px-6">
+                  <div className="flex gap-4">
+                    <Button 
+                      variant={theme === 'light' ? 'default' : 'outline'} 
+                      onClick={() => setTheme('light')}
+                      className={theme === 'light' ? 'bg-primary text-primary-foreground' : 'text-text-muted'}
+                    >
+                      Light Mode
+                    </Button>
+                    <Button 
+                      variant={theme === 'dark' ? 'default' : 'outline'} 
+                      onClick={() => setTheme('dark')}
+                      className={theme === 'dark' ? 'bg-primary text-primary-foreground' : 'text-text-muted'}
+                    >
+                      Dark Mode
+                    </Button>
+                  </div>
+                </CardContent>
+              </div>
+            </Card>
+
+            {/* Trading Sessions - Compact */}
+            <Card className="border-border/60 shadow-sm bg-background overflow-hidden">
+              <button 
+                onClick={() => toggleSection('sessions')}
+                className="w-full flex justify-between items-center p-4 md:p-6 hover:bg-background-secondary/30 transition-colors"
+              >
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold">Trading Sessions</h3>
+                  <p className="text-xs text-text-muted">Customize session windows (e.g. My NYSE 10:00-16:00 UTC).</p>
+                </div>
+                {expandedSections.sessions ? <ChevronUp className="h-5 w-5 text-text-muted"/> : <ChevronDown className="h-5 w-5 text-text-muted"/>}
+              </button>
+              <div className={`transition-all duration-300 ease-in-out ${expandedSections.sessions ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+                <CardContent className="space-y-4 pt-0 pb-6 px-4 md:px-6">
+                  <p className="text-sm text-text-muted">Default sessions are managed by the system. Custom session editing will be available in the next update.</p>
+                </CardContent>
+              </div>
             </Card>
 
           </TabsContent>
 
           {/* TAB 6: Danger Zone */}
           <TabsContent value="danger" className="space-y-6 pt-4">
-            <div className="flex flex-col space-y-2 mb-6">
-              <h2 className="text-2xl font-bold tracking-tight text-loss">Danger Zone</h2>
-              <p className="text-text-muted">Destructive actions for your account and data. These cannot be undone.</p>
+            <div className="p-4 md:p-6 border border-loss/30 bg-loss/5 rounded-xl">
+              <h2 className="text-xl font-bold tracking-tight text-loss">Danger Zone</h2>
+              <p className="text-xs md:text-sm text-text-muted">Destructive actions for your account and data. These cannot be undone.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-loss/30 bg-loss/5">
-                <CardHeader>
-                  <CardTitle className="text-loss text-lg">Factory Reset</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-loss text-base md:text-lg">Factory Reset</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col justify-between gap-4 h-full">
                   <p className="text-sm text-text-muted">
@@ -292,8 +389,8 @@ export default function SettingsPage() {
               </Card>
 
               <Card className="border-loss/50 bg-loss/10 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
-                <CardHeader>
-                  <CardTitle className="text-loss text-lg">Delete Account</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-loss text-base md:text-lg">Delete Account</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col justify-between gap-4 h-full">
                   <p className="text-sm text-text-muted">
@@ -321,27 +418,48 @@ export default function SettingsPage() {
           {/* TAB 2: Strategies */}
           <TabsContent value="strategies" className="space-y-6 pt-4">
             <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Strategy Playbooks</CardTitle>
-                <CardDescription>Format: &quot;Strategy | Playbook&quot; (e.g. Wyckoff | Blue Box)</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Strategy Playbooks</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Format: "Strategy | Playbook" (e.g. Wyckoff | Blue Box)</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3">
                 <div className="flex gap-2">
                   <Input 
                     placeholder="Strategy | Sub-strategy..." 
                     value={newItemInputs['strategies_list'] || ""}
                     onChange={e => setNewItemInputs(p => ({...p, strategies_list: e.target.value}))}
                     onKeyDown={e => e.key === 'Enter' && handleAddListItem('strategies_list')}
+                    className="h-9"
                   />
-                  <Button onClick={() => handleAddListItem('strategies_list')}><Plus className="h-4 w-4" /></Button>
+                  <Button size="sm" onClick={() => handleAddListItem('strategies_list')}><Plus className="h-4 w-4" /></Button>
                 </div>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                <div className="space-y-2 max-h-[360px] overflow-y-auto pr-2">
                   {settings?.strategies_list?.map((item: any) => (
-                    <div key={item.id || item.label} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
-                      <span className="text-sm font-semibold">{item.label || item.name}</span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('strategies_list', item.id || "")}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div key={item.id || item.label} className="flex justify-between items-center gap-2 p-2 bg-background-secondary rounded border border-border">
+                      {editingItem?.listName === 'strategies_list' && editingItem?.id === item.id ? (
+                        <div className="flex-1 flex gap-2">
+                          <Input 
+                            value={editingItem.value}
+                            onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)}
+                            onKeyDown={e => e.key === 'Enter' && handleSaveEdit('strategies_list')}
+                            className="h-8 text-sm"
+                            autoFocus
+                          />
+                          <Button size="sm" variant="secondary" onClick={() => handleSaveEdit('strategies_list')}>Save</Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-sm font-semibold truncate flex-1">{item.label || item.name}</span>
+                          <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={() => handleEditListItem('strategies_list', item)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('strategies_list', item.id || "")}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -352,27 +470,48 @@ export default function SettingsPage() {
           {/* TAB 3: Checklists */}
           <TabsContent value="lists" className="space-y-6 pt-4">
             <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Criteria Checklist</CardTitle>
-                <CardDescription>Manage your pre-trade confirmation criteria.</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Criteria Checklist</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Manage your pre-trade confirmation criteria.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3">
                 <div className="flex gap-2">
                   <Input 
                     placeholder="New criterion..." 
                     value={newItemInputs['criteria_list'] || ""}
                     onChange={e => setNewItemInputs(p => ({...p, criteria_list: e.target.value}))}
                     onKeyDown={e => e.key === 'Enter' && handleAddListItem('criteria_list')}
+                    className="h-9"
                   />
-                  <Button onClick={() => handleAddListItem('criteria_list')}><Plus className="h-4 w-4" /></Button>
+                  <Button size="sm" onClick={() => handleAddListItem('criteria_list')}><Plus className="h-4 w-4" /></Button>
                 </div>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                   {settings?.criteria_list?.map((item: any) => (
-                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
-                      <span className="text-sm">{item.label}</span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('criteria_list', item.id || "")}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div key={item.id} className="flex justify-between items-center gap-2 p-2 bg-background-secondary rounded border border-border">
+                      {editingItem?.listName === 'criteria_list' && editingItem?.id === item.id ? (
+                        <div className="flex-1 flex gap-2">
+                          <Input 
+                            value={editingItem.value}
+                            onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)}
+                            onKeyDown={e => e.key === 'Enter' && handleSaveEdit('criteria_list')}
+                            className="h-8 text-sm"
+                            autoFocus
+                          />
+                          <Button size="sm" variant="secondary" onClick={() => handleSaveEdit('criteria_list')}>Save</Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-sm truncate flex-1">{item.label}</span>
+                          <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={() => handleEditListItem('criteria_list', item)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('criteria_list', item.id || "")}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -380,27 +519,48 @@ export default function SettingsPage() {
             </Card>
 
             <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Mistake Categories</CardTitle>
-                <CardDescription>Common mistakes you make (used for journaling discipline).</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Mistake Categories</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Common mistakes you make (used for journaling discipline).</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3">
                 <div className="flex gap-2">
                   <Input 
                     placeholder="New mistake category..." 
                     value={newItemInputs['mistake_categories_list'] || ""}
                     onChange={e => setNewItemInputs(p => ({...p, mistake_categories_list: e.target.value}))}
                     onKeyDown={e => e.key === 'Enter' && handleAddListItem('mistake_categories_list')}
+                    className="h-9"
                   />
-                  <Button onClick={() => handleAddListItem('mistake_categories_list')}><Plus className="h-4 w-4" /></Button>
+                  <Button size="sm" onClick={() => handleAddListItem('mistake_categories_list')}><Plus className="h-4 w-4" /></Button>
                 </div>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                   {settings?.mistake_categories_list?.map((item: any) => (
-                    <div key={item.id} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
-                      <span className="text-sm">{item.label}</span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('mistake_categories_list', item.id || "")}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div key={item.id} className="flex justify-between items-center gap-2 p-2 bg-background-secondary rounded border border-border">
+                      {editingItem?.listName === 'mistake_categories_list' && editingItem?.id === item.id ? (
+                        <div className="flex-1 flex gap-2">
+                          <Input 
+                            value={editingItem.value}
+                            onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)}
+                            onKeyDown={e => e.key === 'Enter' && handleSaveEdit('mistake_categories_list')}
+                            className="h-8 text-sm"
+                            autoFocus
+                          />
+                          <Button size="sm" variant="secondary" onClick={() => handleSaveEdit('mistake_categories_list')}>Save</Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-sm truncate flex-1">{item.label}</span>
+                          <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={() => handleEditListItem('mistake_categories_list', item)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('mistake_categories_list', item.id || "")}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -411,31 +571,54 @@ export default function SettingsPage() {
           {/* TAB 4: Assets & Platforms */}
           <TabsContent value="assets" className="space-y-6 pt-4">
             <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Traded Assets</CardTitle>
-                <CardDescription>Your instrument watchlist. Format: &quot;SYMBOL, Class&quot;</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Traded Assets</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Your instrument watchlist. Format: "SYMBOL, Class"</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3">
                 <div className="flex gap-2">
                   <Input 
                     placeholder="e.g. BTCUSD, Crypto" 
                     value={newItemInputs['asset_list'] || ""}
                     onChange={e => setNewItemInputs(p => ({...p, asset_list: e.target.value}))}
                     onKeyDown={e => e.key === 'Enter' && handleAddListItem('asset_list', true)}
+                    className="h-9"
                   />
-                  <Button onClick={() => handleAddListItem('asset_list', true)}><Plus className="h-4 w-4" /></Button>
+                  <Button size="sm" onClick={() => handleAddListItem('asset_list', true)}><Plus className="h-4 w-4" /></Button>
                 </div>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                <div className="space-y-2 max-h-[360px] overflow-y-auto pr-2">
                   {settings?.asset_list?.map((item: any) => (
-                    <div key={item.symbol} className="flex justify-between items-center p-2 bg-background-secondary rounded border border-border">
-                      <div>
-                        <span className="text-sm font-bold">{item.symbol}</span>
-                        <span className="text-xs text-text-muted ml-2">{item.asset_class}</span>
-                      </div>
-                      {item.custom && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('asset_list', item.symbol || "", true)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                    <div key={item.symbol} className="flex justify-between items-center gap-2 p-2 bg-background-secondary rounded border border-border">
+                      {editingItem?.listName === 'asset_list' && editingItem?.id === item.symbol ? (
+                        <div className="flex-1 flex gap-2">
+                          <Input 
+                            value={editingItem.value}
+                            onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)}
+                            onKeyDown={e => e.key === 'Enter' && handleSaveEdit('asset_list', true)}
+                            className="h-8 text-sm"
+                            autoFocus
+                          />
+                          <Button size="sm" variant="secondary" onClick={() => handleSaveEdit('asset_list', true)}>Save</Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="truncate flex-1">
+                            <span className="text-sm font-bold">{item.symbol}</span>
+                            <span className="text-xs text-text-muted ml-2">{item.asset_class}</span>
+                          </div>
+                          <div className="flex items-center">
+                            {item.custom && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={() => handleEditListItem('asset_list', item, true)}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            {item.custom && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('asset_list', item.symbol || "", true)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
                   ))}
@@ -452,9 +635,9 @@ export default function SettingsPage() {
           {/* TAB 5: Export & Import Data */}
           <TabsContent value="export" className="pt-4 space-y-6">
             <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Bulk Import Trades (CSV)</CardTitle>
-                <CardDescription>Import historical trades from a spreadsheet.</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Bulk Import Trades (CSV)</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Import historical trades from a spreadsheet.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-text-muted">
@@ -538,9 +721,9 @@ export default function SettingsPage() {
             </Card>
 
             <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader>
-                <CardTitle>Export Data</CardTitle>
-                <CardDescription>Download your entire trading history as a spreadsheet.</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Export Data</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Download your entire trading history as a spreadsheet.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button onClick={handleExportCSV} className="w-full md:w-auto" variant="outline">
