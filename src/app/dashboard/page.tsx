@@ -4,7 +4,7 @@ import { usePrivacy } from "@/components/privacy-provider";
 import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { supabase } from "@/lib/supabase";
-import { Trade, Profile } from "@/types";
+import { Trade, Profile, DailyCheckin } from "@/types";
 import { calculateFloatingPnL, calculateWinRate, calculateProfitFactor } from "@/lib/calculations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Target, Hash, Wallet, Loader2, ArrowUpRight, ArrowDownRight, TrendingUp, ChevronUp, ChevronDown } from "lucide-react";
@@ -27,6 +27,8 @@ export default function DashboardPage() {
   const [avgMood, setAvgMood] = useState(0);
   const [avgDiscipline, setAvgDiscipline] = useState(0);
   const [insightsOpen, setInsightsOpen] = useState(true);
+  const [checkins, setCheckins] = useState<DailyCheckin[]>([]);
+  const [gamification, setGamification] = useState<{ xp: number; level: number; title: string; badges: string[] } | null>(null);
   const { blurMoney } = usePrivacy();
   const { toast } = useToast();
 
@@ -49,13 +51,31 @@ export default function DashboardPage() {
       // 2. Fetch the trades strictly for that active portfolio
       const { data: tradesRes } = await supabase.from("trades").select("*").eq("portfolio_id", activePort.id).order("trade_date", { ascending: true });
 
-      // 3. Check if user already checked in today
+      // 3. Fetch recent check-ins for psychological metrics
       const today = new Date().toISOString().split('T')[0];
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const { data: checkinRes } = await supabase.from('daily_checkins')
         .select('*')
         .eq('user_id', user.id)
         .eq('checkin_date', today)
         .maybeSingle();
+      
+      const { data: recentCheckins } = await supabase.from('daily_checkins')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('checkin_date', thirtyDaysAgo)
+        .order('checkin_date', { ascending: false });
+      
+      if (recentCheckins) setCheckins(recentCheckins);
+
+      const { data: gamificationRes } = await supabase.from('user_gamification')
+        .select('xp, level, badges')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (gamificationRes) {
+        const title = ["Novice", "Apprentice", "Trader", "Senior Trader", "Elite", "Master", "Legend"][Math.min(Math.max(gamificationRes.level - 1, 0), 6)];
+        setGamification({ xp: gamificationRes.xp, level: gamificationRes.level, title, badges: gamificationRes.badges || [] });
+      }
       
       if (checkinRes) {
         setHasCheckedIn(true);
@@ -103,6 +123,15 @@ export default function DashboardPage() {
     }
     
     setHasCheckedIn(true);
+    // Gamification update
+    const { onDailyCheckin } = await import('@/lib/gamification');
+    onDailyCheckin(user.id).then(update => {
+      if (update) {
+        const title = ["Novice", "Apprentice", "Trader", "Senior Trader", "Elite", "Master", "Legend"][Math.min(Math.max(update.levelUp?.new || levelFromXp(update.xp) - 1, 0), 6)];
+        setGamification(prev => ({ xp: update.xp, level: update.levelUp?.new || prev?.level || levelFromXp(update.xp), title, badges: Object.keys(update.questsCompleted) }));
+        if (update.levelUp) toast({ title: "Level Up!", description: `You reached ${title} (Level ${update.levelUp.new})` });
+      }
+    }).catch(console.error);
     // Let's trigger a subtle UI toast if tilt is detected
     if (moodScore <= 2 && disciplineScore <= 2) {
       toast({ title: "Tilt Warning", description: "Low mood and discipline detected. Statistically, you are at high risk of forced errors today. Trade small or step away.", variant: "destructive", duration: 10000 });
@@ -110,6 +139,76 @@ export default function DashboardPage() {
       toast({ title: "Checked In", description: "Have a great trading session." });
     }
   };
+
+  const psychMetrics = useMemo(() => {
+    if (!profile) return null;
+
+    const closed = trades.filter(t => ['Closed - Win', 'Closed - Loss', 'Breakeven', 'Partial'].includes(t.status));
+    const recentCheckins = checkins.slice(0, 14);
+
+    // Discipline Score: criteria compliance + overtrading penalty
+    const withCriteria = closed.filter(t => Array.isArray(t.criteria_checked) && t.criteria_checked.length > 0);
+    const complianceRate = withCriteria.length > 0
+      ? withCriteria.filter(t => t.criteria_checked.every(c => c.checked)).length / withCriteria.length
+      : 0;
+
+    const dayTradeCount: Record<string, number> = {};
+    closed.forEach(t => { dayTradeCount[t.trade_date] = (dayTradeCount[t.trade_date] || 0) + 1; });
+    const overtradeDays = Object.entries(dayTradeCount).filter(([_, count]) => count >= 3);
+    const overtradePenalty = overtradeDays.length > 0 ? Math.min(overtradeDays.length * 0.1, 0.3) : 0;
+
+    const disciplineScore = Math.round(Math.max(0, Math.min(100, complianceRate * 100 * (1 - overtradePenalty))));
+
+    // Emotional Variance from check-ins
+    const moodScores = recentCheckins.map(c => c.mood_score).filter(Boolean);
+    const mean = moodScores.length ? moodScores.reduce((a, b) => a + b, 0) / moodScores.length : 0;
+    const variance = moodScores.length
+      ? moodScores.reduce((acc, s) => acc + Math.pow(s - mean, 2), 0) / moodScores.length
+      : 0;
+    const emotionalVariance = variance < 0.5 ? 'Low' : variance < 1.2 ? 'Medium' : 'High';
+    const emotionalStability = variance < 0.5 ? 'stable' : variance < 1.2 ? 'moderate' : 'volatile';
+
+    // Revenge Trade Risk
+    const sortedByDate = [...closed].sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+    let currentLossStreak = 0;
+    for (const t of sortedByDate) {
+      if (t.net_pnl < 0) currentLossStreak++;
+      else break;
+    }
+    const recentTradesToday = sortedByDate.filter(t => t.trade_date === new Date().toISOString().split('T')[0]).length;
+    const revengeRisk = currentLossStreak >= 3 && recentTradesToday >= 2
+      ? 'High'
+      : currentLossStreak >= 2
+        ? 'Medium'
+        : currentLossStreak >= 1
+          ? 'Low'
+          : 'None';
+
+    // Optimal Trade Size
+    const todayCheckin = checkins.find(c => c.checkin_date === new Date().toISOString().split('T')[0]);
+    const moodFactor = todayCheckin ? todayCheckin.mood_score / 5 : 1;
+    const disciplineFactor = todayCheckin ? todayCheckin.discipline_score / 5 : 1;
+    const baseRisk = profile.default_risk_percentage || 1;
+    const optimalTradeSize = baseRisk * moodFactor * disciplineFactor;
+
+    // Recommendation
+    let recommendation = 'Follow your plan and trade your edge.';
+    if (revengeRisk === 'High') recommendation = 'Step away. You are at high tilt risk after consecutive losses.';
+    else if (disciplineScore < 50) recommendation = 'Focus on checklist discipline before taking new trades.';
+    else if (emotionalVariance === 'High') recommendation = 'Your mood has been volatile — consider journaling before trading.';
+    else if (currentLossStreak >= 2) recommendation = 'Take only A+ setups and reduce position size until momentum returns.';
+    else if (disciplineScore > 85 && moodFactor >= 0.8) recommendation = 'Conditions look good — execute your plan with confidence.';
+
+    return {
+      disciplineScore,
+      emotionalVariance,
+      emotionalStability,
+      revengeRisk,
+      currentLossStreak,
+      optimalTradeSize,
+      recommendation,
+    };
+  }, [profile, trades, checkins]);
 
   const stats = useMemo(() => {
     if (!profile) return null;
@@ -373,8 +472,15 @@ export default function DashboardPage() {
     };
   }, [profile, trades, blurMoney]);
 
+  function levelFromXp(xp: number): number {
+    const titles = ["Novice", "Apprentice", "Trader", "Senior Trader", "Elite", "Master", "Legend"];
+    let level = 1;
+    while (xp >= Math.round(100 * Math.pow(level, 1.6)) && level < titles.length) level++;
+    return level;
+  }
+
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
-  if (!profile || !stats) {
+  if (!profile || !stats || !psychMetrics) {
     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-full space-y-4 p-6 text-center">
@@ -393,6 +499,17 @@ export default function DashboardPage() {
       <div className="p-4 md:p-6 space-y-6 animate-in fade-in duration-500 pb-20">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
+          {gamification && (
+            <div className="flex items-center gap-3 bg-background-secondary border border-border px-3 py-1.5 rounded-lg">
+              <span className="text-xs text-text-muted">{gamification.title}</span>
+              <span className="text-sm font-bold text-primary">Lvl {gamification.level}</span>
+              <div className="w-24 h-2 bg-background rounded-full overflow-hidden">
+                <div className="h-full bg-primary" style={{ width: `${Math.min((gamification.xp / Math.round(100 * Math.pow(gamification.level, 1.6))) * 100, 100)}%` }} />
+              </div>
+              <span className="text-xs text-text-muted">{gamification.xp} XP</span>
+              {gamification.badges.length > 0 && <span className="text-xs">🏅 {gamification.badges.length}</span>}
+            </div>
+          )}
         </div>
 
         {/* Top Row Cards */}
@@ -525,6 +642,57 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Psychological Metrics Panel */}
+        <Card className="border-accent/30 bg-accent/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              <Activity className="h-5 w-5 text-accent" /> Psychological Metrics
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-3 rounded-lg bg-background-secondary border border-border">
+                <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Discipline Score</p>
+                <div className="flex items-end gap-2 mt-1">
+                  <span className={`text-2xl font-bold ${psychMetrics.disciplineScore >= 70 ? 'text-win' : psychMetrics.disciplineScore >= 40 ? 'text-breakeven' : 'text-loss'}`}>
+                    {psychMetrics.disciplineScore}/100
+                  </span>
+                  {psychMetrics.disciplineScore >= 70 ? <span className="text-xs text-win mb-1">↑</span> : psychMetrics.disciplineScore < 50 ? <span className="text-xs text-loss mb-1">↓</span> : null}
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-background-secondary border border-border">
+                <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Emotional Variance</p>
+                <div className="flex items-end gap-2 mt-1">
+                  <span className={`text-2xl font-bold ${psychMetrics.emotionalVariance === 'Low' ? 'text-win' : psychMetrics.emotionalVariance === 'Medium' ? 'text-breakeven' : 'text-loss'}`}>
+                    {psychMetrics.emotionalVariance}
+                  </span>
+                  <span className="text-xs text-text-muted mb-1">({psychMetrics.emotionalStability})</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-background-secondary border border-border">
+                <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Revenge Trade Risk</p>
+                <div className="flex items-end gap-2 mt-1">
+                  <span className={`text-2xl font-bold ${psychMetrics.revengeRisk === 'None' ? 'text-win' : psychMetrics.revengeRisk === 'Low' ? 'text-breakeven' : psychMetrics.revengeRisk === 'Medium' ? 'text-orange-400' : 'text-loss'}`}>
+                    {psychMetrics.revengeRisk}
+                  </span>
+                  {psychMetrics.currentLossStreak > 0 && <span className="text-xs text-text-muted mb-1">{psychMetrics.currentLossStreak} losses</span>}
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-background-secondary border border-border">
+                <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Optimal Trade Size</p>
+                <div className="flex items-end gap-2 mt-1">
+                  <span className="text-2xl font-bold text-primary">{psychMetrics.optimalTradeSize.toFixed(2)}%</span>
+                  <span className="text-xs text-text-muted mb-1">risk</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-background/50 border border-border/50">
+              <p className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-1">Recommendation</p>
+              <p className="text-sm text-foreground">{psychMetrics.recommendation}</p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Psychology Tracker */}
         <div className={`bg-gradient-to-r from-accent/5 to-transparent border border-accent/20 rounded-xl overflow-hidden transition-all duration-500 ease-in-out ${hasCheckedIn ? 'max-h-0 opacity-0 p-0 border-0' : 'max-h-[500px] opacity-100 p-4'} flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4`}>

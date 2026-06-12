@@ -8,6 +8,7 @@ import { tradeSchema, TradeFormValues } from "@/lib/validations/trade";
 import { supabase } from "@/lib/supabase";
 import { calculateRR, calculateWeightedRR, calculateRiskAmount, calculateGrossPnL, detectSession, validateTPSplits } from "@/lib/calculations";
 import { normalizeStrategiesList, DEFAULT_CRITERIA_BY_STRATEGY } from "@/lib/defaults";
+import { onTradeLogged } from "@/lib/gamification";
 import { UserSettings, Profile } from "@/types";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       criteria_checked: [],
       tps_hit: [],
       sl_hit: false,
+      market_regime: "Trending",
       pre_trade_images: [],
       post_trade_images: []
     }
@@ -399,10 +401,19 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
         if (error) throw error;
         toast({ title: "Success", description: "Trade updated successfully." });
       } else {
-        const { error } = await supabase.from('trades').insert(tradeData);
+        const { data: inserted, error } = await supabase.from('trades').insert(tradeData).select().single();
         if (error) throw error;
         localStorage.removeItem('trade_draft'); // Clean draft
         toast({ title: "Success", description: "Trade logged successfully." });
+        // Gamification update (fire-and-forget)
+        if (inserted) onTradeLogged(user.id, inserted as any).then(update => {
+          if (update?.levelUp) {
+            toast({ title: "Level Up!", description: `You reached ${update.levelUp.new}!` });
+          }
+          if (update?.newBadges.length) {
+            toast({ title: "Badge Earned!", description: `${update.newBadges.length} new badge(s) unlocked.` });
+          }
+        }).catch(console.error);
       }
       
       router.push('/trades');
@@ -695,6 +706,22 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                         <SelectItem key={sub} value={sub}>{sub}</SelectItem>
                       ))}
                       <SelectItem value="Other">Other / Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="market_regime" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Market Regime</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || "Trending"}>
+                    <FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Select Regime" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="Trending">Trending</SelectItem>
+                      <SelectItem value="Choppy/Range">Choppy / Range</SelectItem>
+                      <SelectItem value="News-Driven">News-Driven</SelectItem>
+                      <SelectItem value="Breakout">Breakout</SelectItem>
+                      <SelectItem value="Reversal">Reversal</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>

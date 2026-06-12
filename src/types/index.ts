@@ -114,3 +114,26 @@ export interface Portfolio {
   current_balance: number;
   currency: string;
 }
+
+export interface DailyCheckin {
+  id?: string;
+  user_id: string;
+  checkin_date: string;
+  mood_score: number;
+  discipline_score: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserGamification {
+  id: string;
+  user_id: string;
+  xp: number;
+  level: number;
+  badges: string[];
+  quests_completed: Record<string, string>;
+  last_quest_date: string;
+  updated_at: string;
+}
+
+export type MarketRegime = 'Trending' | 'Choppy/Range' | 'News-Driven' | 'Breakout' | 'Reversal';

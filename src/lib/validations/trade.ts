@@ -26,6 +26,7 @@ export const tradeSchema = z.object({
   sub_strategy: emptyAsUndefined(z.string().optional()),
   schematic: z.string(),
   entry_event: z.string(),
+  market_regime: emptyAsUndefined(z.enum(['Trending', 'Choppy/Range', 'News-Driven', 'Breakout', 'Reversal']).optional()),
   fundamental_bias: emptyAsUndefined(z.enum(['Bullish', 'Bearish', 'Neutral']).optional()),
   fundamental_aligned: emptyAsUndefined(z.enum(['Yes', 'No', 'Partial']).optional()),
   fundamental_note: emptyAsUndefined(z.string().max(500).optional()),
