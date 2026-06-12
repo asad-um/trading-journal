@@ -4,6 +4,25 @@
 
 ---
 
+## Session: 2026-06-12
+
+### Re-evaluation after Batch 4 Push
+
+| Batch | Scope | Status |
+|-------|-------|--------|
+| Batch 1 | Tooltip clipping, Forgot Password input, Mental Edge hide, T Pal rename | ✅ Pushed |
+| Batch 2 | Statistics collapsible Strategy/Criteria, Settings compact/editable, T Pal styling | ✅ Pushed |
+| Batch 3 | Forgot Password rewrite, Mental Edge DB persistence, Settings collapse, Remove Fees, Rename Assets | ✅ Pushed |
+| Batch 4 | Shared trade filters (Playbook + Trade Log), 3 max images with flexible labels | ✅ Pushed |
+| Batch 5 | Playbooks nested customization in Settings, expand asset list | ✅ Pushed |
+| Batch 6 | Fix MASTER_FIX SQL cascade error, fix password reset flow to force new password | 🔄 NEXT |
+
+### Outstanding Issues from User Feedback
+1. **Playbooks Customization** — Settings tab exists but uses flat "Strategy | Playbook" strings. Need nested strategy/playbook editing (add/edit/delete parent strategies and child playbooks).
+2. **More Assets** — Add GER40, NIKKEI, and additional global instruments beyond current list.
+3. **Password Reset Flow Bug** — Reset link logs user in directly without prompting for new password. Need dedicated reset handler.
+4. **MASTER_FIX SQL Error** — `DROP FUNCTION recalculate_balance_v2()` fails because triggers depend on it. Need to drop triggers first or use CASCADE.
+
 ## Session: 2026-06-11
 
 ### User Complaints Summary (All Items)

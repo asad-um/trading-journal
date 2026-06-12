@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 import { Loader2, Download, Plus, Trash2, UploadCloud, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StrategyPlaybooksEditor } from "@/components/settings/playbooks-editor";
+import { normalizeStrategiesList } from "@/lib/defaults";
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -346,38 +348,10 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="strategies" className="space-y-6 pt-4">
-            <Card className="border-border/60 shadow-sm bg-background">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base md:text-lg">Strategy Playbooks</CardTitle>
-                <CardDescription className="text-xs md:text-sm">Format: &quot;Strategy | Playbook&quot; (e.g. Wyckoff | Blue Box)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex gap-2">
-                  <Input placeholder="Strategy | Sub-strategy..." value={newItemInputs['strategies_list'] || ""} onChange={e => setNewItemInputs(p => ({...p, strategies_list: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddListItem('strategies_list')} className="h-9" />
-                  <Button size="sm" onClick={() => handleAddListItem('strategies_list')}><Plus className="h-4 w-4" /></Button>
-                </div>
-                <div className="space-y-2 max-h-[360px] overflow-y-auto pr-2">
-                  {settings?.strategies_list?.map((item: any) => (
-                    <div key={item.id || item.label} className="flex justify-between items-center gap-2 p-2 bg-background-secondary rounded border border-border">
-                      {editingItem?.listName === 'strategies_list' && editingItem?.id === item.id ? (
-                        <div className="flex-1 flex gap-2">
-                          <Input value={editingItem.value} onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)} onKeyDown={e => e.key === 'Enter' && handleSaveEdit('strategies_list')} className="h-8 text-sm" autoFocus />
-                          <Button size="sm" variant="secondary" onClick={() => handleSaveEdit('strategies_list')}>Save</Button>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="text-sm font-semibold truncate flex-1">{item.label || item.name}</span>
-                          <div className="flex items-center">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={() => handleEditListItem('strategies_list', item)}><Pencil className="h-3.5 w-3.5" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('strategies_list', item.id || "")}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <StrategyPlaybooksEditor
+              strategies={settings?.strategies_list ? normalizeStrategiesList(settings.strategies_list) : []}
+              onChange={(newList) => handleUpdateList('strategies_list', newList)}
+            />
           </TabsContent>
 
           <TabsContent value="lists" className="space-y-6 pt-4">

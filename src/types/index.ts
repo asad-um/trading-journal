@@ -85,12 +85,18 @@ export interface Trade {
   updated_at: string;
 }
 
+export interface StrategyPlaybook {
+  id: string;
+  name: string;
+  playbooks: { id: string; name: string }[];
+}
+
 export interface UserSettings {
   id: string;
   user_id: string;
   criteria_list: { id: string; label: string; order: number }[];
   entry_events_list: { id: string; label: string }[];
-  strategies_list?: { [key: string]: unknown }[];
+  strategies_list?: StrategyPlaybook[];
   asset_list: { symbol: string; asset_class: string; custom: boolean }[];
   mistake_categories_list: { id: string; label: string }[];
   broker_list: { id: string; name: string }[];

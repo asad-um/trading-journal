@@ -1,12 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tradeSchema, TradeFormValues } from "@/lib/validations/trade";
 import { supabase } from "@/lib/supabase";
 import { calculateRR, calculateWeightedRR, calculateRiskAmount, calculateGrossPnL, detectSession, validateTPSplits } from "@/lib/calculations";
+import { normalizeStrategiesList } from "@/lib/defaults";
 import { UserSettings, Profile } from "@/types";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle,  } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UploadCloud, X, Zap, CheckCircle2,  } from "lucide-react";
@@ -25,8 +24,6 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { usePrivacy } from "@/components/privacy-provider";
 import DOMPurify from "dompurify";
-
-const GLOBAL_CRITERIA = ["Volume Confluence", "Seek and Destroy", "Divergence", "Leader-Lagger Reference", "Volatility"];
 
 export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValues> & { id?: string } }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -231,87 +228,26 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     }
   };
 
-  const getDynamicPresets = useCallback(() => {
-    const base: Record<string, Record<string, string[]>> = {
-      "Wyckoff": {
-        "Blue Box Strategy": ["NYSE Session Action", "Read Initial 5-10m Reaction", "Micro Accum/Dist", "Quick 1:5 RR Target"],
-        "Spring/UTAD Strategy": ["Spring/UTAD Formed", "Volume Absorption", "BOOF (Break of Orderflow)", "Micro Schematic Mitigation", "Fib 50%-80% Retracement"],
-        "Classical Strategy": ["HTF Schematic (1H/15m/5m)", "HTF POI Mitigation", "In-line with Supply/Demand", "Micro Accum/Re-accum Entry", "Fib 50%-80% Retracement"],
-        "Re-accumulation Entry": ["Phase B Spring", "Test of Support", "Volume Dry-Up", "SOS Confirmation", "Back to Edge"],
-        "Re-distribution Entry": ["Phase B UT", "Test of Resistance", "Volume Climax", "SOW Confirmation", "Back to Edge"]
-      },
-      "SMC (Smart Money)": {
-        "ChoCh Entry": ["HTF POI Mitigation", "Change of Character (ChoCh)", "Order Block (OB) Formation", "Return to OB"],
-        "Continuation": ["Break of Structure (BOS)", "Fair Value Gap (FVG)", "Displacement"],
-        "Liquidity Sweep": ["Equal Highs/Lows", "Stop Hunt", "Reversal Structure", "OB Entry"],
-        "Breaker Block": ["Failed Order Block", "Momentum Shift", "Retest of Breaker", "Entry Confirmation"],
-        "Mitigation Block": ["Previous OB Test", "Price Rejection", "FVG Fill", "Continuation Entry"]
-      },
-      "ICT": {
-        "Silver Bullet": ["Specific Time Window (10AM/2PM/3AM)", "FVG Formation", "Clear Draw on Liquidity"],
-        "2022 Model": ["Liquidity Sweep (Buyside/Sellside)", "Market Structure Shift (MSS)", "FVG Entry"],
-        "Judas Swing": ["Asian Range", "London Sweep", "NY Reversal", "FVG Entry"],
-        "Killzone": ["London Open (3-5AM)", "NY Open (8:30-11AM)", "PM Session (2-4PM)", "High Probability Setup"],
-        "OTE (Optimal Trade Entry)": ["Fib 62%-79%", "Structure Alignment", "Discretionary Block", "Entry Confirmation"]
-      },
-      "Price Action": {
-        "Pin Bar": ["Rejection at Key Level", "Long Wick", "Body at Extreme", "Trend Continuation/Reversal"],
-        "Engulfing": ["Strong Momentum", "Body Engulfs Previous", "Level Confluence", "Volume Confirmation"],
-        "Inside Bar": ["Consolidation Break", "Mother Bar", "Directional Bias", "Breakout Entry"],
-        "Fakeout / Trap": ["False Break", "Quick Reversal", "Liquidity Grab", "Entry on Close Back"]
-      },
-      "Supply & Demand": {
-        "Fresh Zone": ["Strong Base", "Impulse Away", "Untested Zone", "First Retest Entry"],
-        "Reclaimed Zone": ["Previous Resistance", "Turned Support", "Volume on Break", "Retest Entry"],
-        "Drop-Base-Drop": ["Bearish Continuation", "Base Formation", "Impulse Down", "Entry on Break"],
-        "Rally-Base-Rally": ["Bullish Continuation", "Base Formation", "Impulse Up", "Entry on Break"]
-      },
-      "Trend Following": {
-        "Pullback Entry": ["Trend Identification", "Fib Retracement", "Moving Average Bounce", "Momentum Resumption"],
-        "Breakout Entry": ["Consolidation", "Volume Spike", "Clean Break", "Retest or Momentum"],
-        "Moving Average Cross": ["Golden Cross / Death Cross", "Trend Alignment", "Volume Confirmation", "Entry on Close"],
-        "Channel Trading": ["Parallel Lines", "Support/Resistance Bounce", "Middle Line Rejection", "Trend Continuation"]
-      },
-      "Mean Reversion": {
-        "Overbought/Oversold": ["RSI >70 or <30", "Divergence", "Key Level", "Reversal Candle"],
-        "Bollinger Band Reversal": ["Band Touch", "Band Squeeze", "Mean Reversion", "Volume Confirmation"],
-        "Range Bound": ["Clear Support", "Clear Resistance", "Midpoint Rejection", "Boundary Bounce"],
-        "Divergence Play": ["RSI Divergence", "MACD Divergence", "Price Action Confirmation", "Entry on Break"]
-      },
-      "Session Trading": {
-        "London Open": ["Asian Range", "Breakout/Breakdown", "Volume Increase", "Trend Setup"],
-        "NY Open": ["Pre-market Analysis", "Opening Range", "Momentum Play", "Trend Continuation"],
-        "London Close": ["Volume Drop", "Consolidation", "Reversal Setup", "Low Probability — Avoid"],
-        "Asian Session": ["Low Volatility", "Range Bound", "Setup for London", "Minimal Trades"]
-      },
-      "Multi-Timeframe": {
-        "Top-Down Analysis": ["Monthly/Weekly Bias", "Daily Structure", "4H Setup", "1H Entry"],
-        "HTF + LTF Confluence": ["HTF Order Block", "LTF ChoCh", "LTF FVG", "Precision Entry"],
-        "3-Timeframe Rule": ["Trend on HTF", "Structure on MTF", "Entry on LTF", "All Aligned"]
-      },
-      "Fundamental": {
-        "News Release": ["Economic Calendar", "High Impact Event", "Expected vs Actual", "Directional Bias"],
-        "Central Bank Play": ["FOMC / ECB / BOE", "Rate Decision", "Policy Statement", "Volatility Play"],
-        "Earnings Play": ["Earnings Report", "Guidance", "Pre-market Gap", "Directional Momentum"]
-      }
-    };
-    
-    return base;
-  }, []);
+  const presets = useMemo(() => {
+    const list = normalizeStrategiesList(settings?.strategies_list);
+    const result: Record<string, string[]> = {};
+    list.forEach(s => {
+      result[s.name] = s.playbooks.map(p => p.name);
+    });
+    return result;
+  }, [settings?.strategies_list]);
 
   const applyStrategyCriteria = () => {
-    if (!strategy || !sub_strategy) return;
+    if (!settings?.criteria_list?.length) return;
     
-    const presets = getDynamicPresets();
-    const specificCriteria = presets[strategy || ""]?.[sub_strategy] || [];
-    const newCriteria = [...specificCriteria, ...GLOBAL_CRITERIA].map((label, idx) => ({
-      id: `auto-${idx}`,
-      label,
+    const newCriteria = settings.criteria_list.map((c: { id: string; label: string }) => ({
+      id: c.id,
+      label: c.label,
       checked: true
     }));
     
     replaceCriteria(newCriteria);
-    toast({ title: "Criteria Autofilled", description: `Applied checklist for ${sub_strategy}` });
+    toast({ title: "Criteria Autofilled", description: `Applied ${newCriteria.length} checklist items` });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'pre' | 'post') => {
@@ -567,7 +503,6 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
   }
 
   const riskAmtCalculated = calculateRiskAmount(profile.current_balance, risk_percentage || 0);
-  const presets = getDynamicPresets();
 
   return (
     <Form {...form}>
@@ -754,7 +689,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Select Sub-Strategy" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {(presets[strategy || ""] ? Object.keys(presets[strategy || ""]) : []).map(sub => (
+                      {(presets[strategy || ""] || []).map(sub => (
                         <SelectItem key={sub} value={sub}>{sub}</SelectItem>
                       ))}
                       <SelectItem value="Other">Other / Custom</SelectItem>
@@ -772,7 +707,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                 <AccordionContent className="px-4 pb-4 pt-2">
                   <div className="flex justify-between items-center mb-4">
                     <p className="text-xs text-text-muted">Check off the criteria that validated this trade.</p>
-                    <Button type="button" variant="secondary" size="sm" onClick={applyStrategyCriteria} disabled={!presets[strategy || ""]?.[sub_strategy || ""]}>
+                    <Button type="button" variant="secondary" size="sm" onClick={applyStrategyCriteria} disabled={!strategy || !sub_strategy || sub_strategy === 'Other'}>
                       <Zap className="h-3 w-3 mr-2 text-accent" /> Auto-fill {sub_strategy || 'Criteria'}
                     </Button>
                   </div>
