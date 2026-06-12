@@ -202,21 +202,44 @@ export function calculateMaxDrawdown(trades: Trade[], startingBalance: number): 
   return { maxDrawdownAmount, maxDrawdownPercent, drawdownPeriodStart: ddStart, drawdownPeriodEnd: ddEnd };
 }
 
-/**
- * Detects the session based on time UTC.
- */
-export function detectSession(timeString: string): 'Asia' | 'London' | 'NYSE' | 'London/NYSE Overlap' | 'Off-Hours' {
+function timeToMinutes(timeString: string): number {
   const [hours, minutes] = timeString.split(':').map(Number);
-  const time = hours + minutes / 60;
+  return hours * 60 + minutes;
+}
+
+export interface SessionWindow {
+  id: string;
+  label: string;
+  start_time: string;
+  end_time: string;
+}
+
+/**
+ * Detects the session based on time UTC against the user's defined session windows.
+ */
+export function detectSession(timeString: string, sessions: SessionWindow[] = []): string {
+  const minutes = timeToMinutes(timeString);
   
-  // London/NYSE Overlap: 14:30 - 16:00
-  if (time >= 14.5 && time <= 16) return 'London/NYSE Overlap';
-  // Asia: 00:00 - 05:00
-  if (time >= 0 && time <= 5) return 'Asia';
-  // London: 06:00 - 16:00 (since overlap is caught above, this catches 06:00 - 14:29)
-  if (time >= 6 && time <= 16) return 'London';
-  // NYSE: 14:30 - 17:30 (catches 16:01 - 17:30)
-  if (time > 16 && time <= 17.5) return 'NYSE';
+  // Fallback to hardcoded defaults if no custom sessions provided
+  const windows = sessions.length > 0 ? sessions : [
+    { id: "asia", label: "Asia", start_time: "00:00", end_time: "06:00" },
+    { id: "london", label: "London", start_time: "06:00", end_time: "16:00" },
+    { id: "overlap", label: "London/NYSE Overlap", start_time: "14:30", end_time: "16:00" },
+    { id: "nyse", label: "NYSE", start_time: "16:00", end_time: "21:00" },
+  ];
+  
+  for (const session of windows) {
+    const start = timeToMinutes(session.start_time);
+    const end = timeToMinutes(session.end_time);
+    
+    if (start <= end) {
+      // Normal range (e.g. 06:00 - 16:00)
+      if (minutes >= start && minutes <= end) return session.label;
+    } else {
+      // Overnight range (e.g. 22:00 - 04:00)
+      if (minutes >= start || minutes <= end) return session.label;
+    }
+  }
   
   return 'Off-Hours';
 }

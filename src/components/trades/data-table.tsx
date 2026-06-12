@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/table"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -54,16 +53,6 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter symbols..."
-          value={(table.getColumn("symbol")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("symbol")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm h-10"
-        />
-      </div>
       <div className="rounded-md border border-border/60 bg-background-secondary shadow-sm overflow-x-auto overflow-y-hidden max-w-[100vw]">
         <Table>
           <TableHeader>

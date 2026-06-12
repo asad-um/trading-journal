@@ -157,7 +157,20 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 
 ---
 
-## 8. Recommended Next Fixes (Priority Order)
+## 8. Recent UX Fixes (Batch 8 — 2026-06-12)
+
+| # | Fix | File(s) |
+|---|-----|---------|
+| 1 | Strategy-aligned validation criteria auto-fill | `src/lib/defaults.ts`, `src/components/trades/trade-form.tsx` |
+| 2 | Trading sessions now support custom UTC time windows | `src/types/index.ts`, `src/lib/calculations.ts`, `src/app/settings/page.tsx`, `supabase/migrations/batch6_sessions_list.sql` |
+| 3 | Collapsible filters panel with active-filter badge | `src/components/trades/trade-filters.tsx` |
+| 4 | Removed duplicate "Filter symbols" input from trade table | `src/components/trades/data-table.tsx` |
+| 5 | Help & Guides updated + added to mobile nav | `src/app/help/page.tsx`, `src/components/layout/app-layout.tsx` |
+| 6 | Reset-password "Link Expired" false-positive fixed | `src/app/reset-password/page.tsx`, `src/middleware.ts` |
+| 7 | Mobile logout icon fades on scroll | `src/components/layout/app-layout.tsx` |
+| 8 | Smart Insights v3: categorized cards + new analytics | `src/app/dashboard/page.tsx` |
+
+## 9. Recommended Next Fixes (Priority Order)
 
 1. **Add CSRF tokens** to all state-changing API routes
 2. **Add rate limiting** (Vercel Edge Config or API middleware)

@@ -120,12 +120,88 @@ const ASSET_SEEDS = [
 ];
 
 export const DEFAULT_SESSIONS = [
-  { id: "asia", label: "Asia" },
-  { id: "london", label: "London" },
-  { id: "nyse", label: "NYSE" },
-  { id: "overlap", label: "London/NYSE Overlap" },
-  { id: "off-hours", label: "Off-Hours" },
+  { id: "asia", label: "Asia", start_time: "00:00", end_time: "06:00" },
+  { id: "london", label: "London", start_time: "06:00", end_time: "16:00" },
+  { id: "overlap", label: "London/NYSE Overlap", start_time: "14:30", end_time: "16:00" },
+  { id: "nyse", label: "NYSE", start_time: "16:00", end_time: "21:00" },
+  { id: "off-hours", label: "Off-Hours", start_time: "21:00", end_time: "23:59" },
 ];
+
+export const DEFAULT_CRITERIA_BY_STRATEGY: Record<string, string[]> = {
+  Wyckoff: [
+    "Valid Accumulation/Distribution Schematic",
+    "Spring or UTAD Present",
+    "Volume Confirmation",
+    "Sign of Strength (SOS) / Weakness (SOW)",
+    "LPS or Test of Support",
+    "Trend Alignment with Higher TF",
+  ],
+  "SMC (Smart Money)": [
+    "Liquidity Sweep Identified",
+    "Fair Value Gap / Imbalance Present",
+    "Breaker / Mitigation Block",
+    "Order Block Refinement",
+    "Inducement Cleared",
+    "Trend Alignment with Higher TF",
+  ],
+  ICT: [
+    "Killzone Active",
+    "Fair Value Gap (FVG) Present",
+    "Optimal Trade Entry Zone",
+    "Judas Swing Identified",
+    "Market Structure Shift",
+    "2022 Model / Silver Bullet Criteria Met",
+  ],
+  "Price Action": [
+    "Clear Reversal Pattern",
+    "Pin Bar / Engulfing / Inside Bar",
+    "Support/Resistance Context",
+    "Trend Alignment",
+    "Fakeout / Trap Confirmed",
+  ],
+  "Supply & Demand": [
+    "Fresh Zone or Reclaimed Zone",
+    "Drop-Base-Drop / Rally-Base-Rally",
+    "Entry at Zone Edge",
+    "Momentum into Zone Confirmed",
+    "Higher TF Zone Alignment",
+  ],
+  "Trend Following": [
+    "Clear Directional Bias",
+    "Pullback / Breakout / MA Cross",
+    "Trend Confirmation",
+    "No Major S/R Obstruction",
+    "Volume on Trend Side",
+  ],
+  "Mean Reversion": [
+    "Overbought/Oversold Signal",
+    "Divergence Present",
+    "Range Bound Confirmation",
+    "Rejection at Range Boundary",
+    "Mean Reversion Target Defined",
+  ],
+  "Session Trading": [
+    "Session Time Confirmed",
+    "Pre-Session Liquidity Taken",
+    "Session-High/Low Reference Set",
+    "Killzone or Window Active",
+    "Avoid Low-Volume Periods",
+  ],
+  "Multi-Timeframe": [
+    "HTF Bias Aligned",
+    "LTF Entry Confirmation",
+    "Top-Down Analysis Complete",
+    "3-Timeframe Rule Satisfied",
+    "Confluence Across TFs",
+  ],
+  Fundamental: [
+    "News/Event Calendar Checked",
+    "Expected Volatility Understood",
+    "Fundamental Bias Aligned",
+    "No Major Conflicting Events",
+    "Risk Sized for Event",
+  ],
+};
 
 export const DEFAULT_ASSETS = ASSET_SEEDS
   .flatMap(group => group.split(",").map(symbol => ({

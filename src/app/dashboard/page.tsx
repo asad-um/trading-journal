@@ -161,72 +161,144 @@ export default function DashboardPage() {
     const openPositions = trades.filter(t => t.status === 'Open');
 
 
-    // --- Algorithmic Trading Coach (Smart Insights v2) ---
-    const insights: string[] = [];
-    
+    // --- Algorithmic Trading Coach (Smart Insights v3) ---
+    type InsightCategory = 'edge' | 'risk' | 'behavior' | 'recommendation';
+    interface Insight { text: string; category: InsightCategory; }
+    const insights: Insight[] = [];
+
+    const addInsight = (text: string, category: InsightCategory) => {
+      if (text) insights.push({ text, category });
+    };
+
     if (closed.length >= 5) {
+      // Helpers
+      const grouped = (keyFn: (t: Trade) => string) => {
+        const map: Record<string, { wins: number; total: number; pnl: number; rrSum: number; rrCount: number }> = {};
+        closed.forEach(t => {
+          const key = keyFn(t);
+          if (!key) return;
+          if (!map[key]) map[key] = { wins: 0, total: 0, pnl: 0, rrSum: 0, rrCount: 0 };
+          map[key].total++;
+          map[key].pnl += t.net_pnl;
+          if (t.net_pnl > 0) map[key].wins++;
+          if (t.actual_rr_achieved !== 0) { map[key].rrSum += t.actual_rr_achieved; map[key].rrCount++; }
+        });
+        return map;
+      };
+
+      const minGroupSize = 3;
+
       // 1. Symbol Analysis
-      const symbolMap: Record<string, { wins: number, total: number, pnl: number }> = {};
-      closed.forEach(t => {
-        if (!symbolMap[t.symbol]) symbolMap[t.symbol] = { wins: 0, total: 0, pnl: 0 };
-        symbolMap[t.symbol].total++;
-        symbolMap[t.symbol].pnl += t.net_pnl;
-        if (t.net_pnl > 0) symbolMap[t.symbol].wins++;
-      });
-      
-      let bestSymbol = "";
-      let bestSymbolWR = 0;
-      let worstSymbol = "";
-      let worstSymbolWR = 100;
-      
+      const symbolMap = grouped(t => t.symbol);
+      let bestSymbol = "", worstSymbol = "";
+      let bestSymbolWR = 0, worstSymbolWR = 100;
       Object.keys(symbolMap).forEach(sym => {
         const data = symbolMap[sym];
-        if (data.total >= 3) {
+        if (data.total >= minGroupSize) {
           const wr = (data.wins / data.total) * 100;
           if (wr > bestSymbolWR && data.pnl > 0) { bestSymbolWR = wr; bestSymbol = sym; }
           if (wr < worstSymbolWR && data.pnl < 0) { worstSymbolWR = wr; worstSymbol = sym; }
         }
       });
-      
-      if (bestSymbol) insights.push(`🔥 Strong Edge: ${bestSymbol} — ${bestSymbolWR.toFixed(0)}% win rate. Consider this your A+ setup.`);
-      if (worstSymbol) insights.push(`⚠️ Wealth Leak: ${worstSymbol} — ${worstSymbolWR.toFixed(0)}% win rate. Reduce size or avoid entirely.`);
-      
-      // 2. Long vs Short Directional Edge
+      if (bestSymbol) addInsight(`Strong Edge: ${bestSymbol} — ${bestSymbolWR.toFixed(0)}% win rate. Consider this your A+ setup.`, 'edge');
+      if (worstSymbol) addInsight(`Wealth Leak: ${worstSymbol} — ${worstSymbolWR.toFixed(0)}% win rate. Reduce size or avoid entirely.`, 'risk');
+
+      // 2. Strategy Analysis
+      const strategyMap = grouped(t => t.strategy || 'Unspecified');
+      let bestStrategy = "", worstStrategy = "";
+      let bestStrategyWR = 0, worstStrategyWR = 100;
+      Object.keys(strategyMap).forEach(strat => {
+        const data = strategyMap[strat];
+        if (data.total >= minGroupSize) {
+          const wr = (data.wins / data.total) * 100;
+          if (wr > bestStrategyWR && data.pnl > 0) { bestStrategyWR = wr; bestStrategy = strat; }
+          if (wr < worstStrategyWR && data.pnl < 0) { worstStrategyWR = wr; worstStrategy = strat; }
+        }
+      });
+      if (bestStrategy) addInsight(`Best Strategy: ${bestStrategy} wins ${bestStrategyWR.toFixed(0)}% of the time. Double down on this playbook.`, 'edge');
+      if (worstStrategy) addInsight(`Worst Strategy: ${worstStrategy} wins only ${worstStrategyWR.toFixed(0)}%. Review rules before taking another.`, 'risk');
+
+      // 3. Sub-Strategy / Playbook Analysis
+      const playbookMap = grouped(t => t.sub_strategy || 'Unspecified');
+      let bestPlaybook = "";
+      let bestPlaybookWR = 0;
+      Object.keys(playbookMap).forEach(pb => {
+        const data = playbookMap[pb];
+        if (data.total >= minGroupSize) {
+          const wr = (data.wins / data.total) * 100;
+          if (wr > bestPlaybookWR && data.pnl > 0) { bestPlaybookWR = wr; bestPlaybook = pb; }
+        }
+      });
+      if (bestPlaybook) addInsight(`Top Playbook: ${bestPlaybook} — ${bestPlaybookWR.toFixed(0)}% win rate. Your highest-conviction model.`, 'edge');
+
+      // 4. Directional Edge
       const longTrades = closed.filter(t => t.direction === 'Long');
       const shortTrades = closed.filter(t => t.direction === 'Short');
       const longWR = longTrades.length > 0 ? (longTrades.filter(t => t.net_pnl > 0).length / longTrades.length * 100) : 0;
       const shortWR = shortTrades.length > 0 ? (shortTrades.filter(t => t.net_pnl > 0).length / shortTrades.length * 100) : 0;
-      
       if (longTrades.length >= 3 && shortTrades.length >= 3) {
-        if (longWR > shortWR + 15) insights.push(`📈 Long Bias: Your Long win rate (${longWR.toFixed(0)}%) significantly outperforms Shorts (${shortWR.toFixed(0)}%). Focus on buying dips.`);
-        if (shortWR > longWR + 15) insights.push(`📉 Short Bias: Your Short win rate (${shortWR.toFixed(0)}%) significantly outperforms Longs (${longWR.toFixed(0)}%). Consider bearish setups.`);
+        if (longWR > shortWR + 15) addInsight(`Long Bias: Your Long win rate (${longWR.toFixed(0)}%) significantly outperforms Shorts (${shortWR.toFixed(0)}%).`, 'edge');
+        if (shortWR > longWR + 15) addInsight(`Short Bias: Your Short win rate (${shortWR.toFixed(0)}%) significantly outperforms Longs (${longWR.toFixed(0)}%).`, 'edge');
       }
-      
-      // 3. Win/Loss Streak Detection
+
+      // 5. Session Analysis (with RR)
+      const sessionMap = grouped(t => t.session || 'Off-Hours');
+      let bestSession = "";
+      let bestSessionRR = -Infinity;
+      Object.keys(sessionMap).forEach(sess => {
+        const data = sessionMap[sess];
+        if (data.total >= minGroupSize && data.rrCount > 0) {
+          const avgRR = data.rrSum / data.rrCount;
+          if (avgRR > bestSessionRR && data.pnl > 0) { bestSessionRR = avgRR; bestSession = sess; }
+        }
+      });
+      if (bestSession) addInsight(`Ideal Window: ${bestSession} gives you ${bestSessionRR.toFixed(2)}R average. Schedule focus time here.`, 'recommendation');
+
+      // 6. Timeframe Analysis
+      const tfMap = grouped(t => t.entry_timeframe || t.analysis_timeframe || 'Unspecified');
+      let bestTF = "";
+      let bestTFRR = -Infinity;
+      Object.keys(tfMap).forEach(tf => {
+        const data = tfMap[tf];
+        if (data.total >= minGroupSize && data.rrCount > 0) {
+          const avgRR = data.rrSum / data.rrCount;
+          if (avgRR > bestTFRR && data.pnl > 0) { bestTFRR = avgRR; bestTF = tf; }
+        }
+      });
+      if (bestTF) addInsight(`Best Timeframe: ${bestTF} entries average ${bestTFRR.toFixed(2)}R. Your sweet spot for execution.`, 'edge');
+
+      // 7. Criteria Compliance
+      const withCriteria = closed.filter(t => Array.isArray(t.criteria_checked) && t.criteria_checked.length > 0);
+      if (withCriteria.length >= 5) {
+        const allMet = withCriteria.filter(t => t.criteria_checked.every(c => c.checked));
+        const complianceRate = (allMet.length / withCriteria.length) * 100;
+        if (complianceRate < 60) addInsight(`Discipline Gap: You only meet all your criteria ${complianceRate.toFixed(0)}% of the time. Stricter checklist adherence may improve edge.`, 'risk');
+        else if (complianceRate > 85) addInsight(`Discipline Strength: You meet all criteria ${complianceRate.toFixed(0)}% of the time. Keep following your process.`, 'edge');
+      }
+
+      // 8. Streak Detection
       let currentStreak = 0;
       let streakType = '';
-      const sortedByDate = [...closed].sort((a,b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+      const sortedByDate = [...closed].sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
       for (const t of sortedByDate) {
         const isWin = t.net_pnl > 0;
         if (streakType === '') { streakType = isWin ? 'win' : 'loss'; currentStreak = 1; }
         else if ((streakType === 'win' && isWin) || (streakType === 'loss' && !isWin)) { currentStreak++; }
         else { break; }
       }
-      if (streakType === 'loss' && currentStreak >= 3) insights.push(`🛑 Losing Streak: ${currentStreak} consecutive losses. Step away. Risk of tilt is high — mandatory 24h cooling off recommended.`);
-      if (streakType === 'win' && currentStreak >= 4) insights.push(`✅ Hot Streak: ${currentStreak} consecutive wins — but don't get euphoric. Lock profits, stick to plan, avoid oversized positions.`);
-      
-      // 4. Day of Week Analysis (expanded)
+      if (streakType === 'loss' && currentStreak >= 3) addInsight(`Losing Streak: ${currentStreak} consecutive losses. Step away — tilt risk is high.`, 'risk');
+      if (streakType === 'win' && currentStreak >= 4) addInsight(`Hot Streak: ${currentStreak} consecutive wins. Lock profits and avoid oversized positions.`, 'behavior');
+
+      // 9. Day of Week Analysis
       const dowPnL: Record<number, { pnl: number, count: number }> = {};
-      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       closed.forEach(t => {
         const day = new Date(t.trade_date).getDay();
         if (!dowPnL[day]) dowPnL[day] = { pnl: 0, count: 0 };
         dowPnL[day].pnl += t.net_pnl;
         dowPnL[day].count++;
       });
-      
-      let worstDay = -1;
-      let worstDayPnL = 0;
+      let worstDay = -1, worstDayPnL = 0;
       Object.keys(dowPnL).forEach(d => {
         const num = parseInt(d);
         if (dowPnL[num].count >= 2 && dowPnL[num].pnl < worstDayPnL) {
@@ -234,34 +306,16 @@ export default function DashboardPage() {
           worstDay = num;
         }
       });
-      if (worstDay >= 0) insights.push(`📆 Avoid ${dayNames[worstDay]}s: You've lost ${blurMoney(Math.abs(worstDayPnL))} across ${dowPnL[worstDay].count} trades. Consider no-trade days.`);
-      
-      // 5. Session Analysis
-      const sessionMap: Record<string, number> = {};
-      closed.forEach(t => {
-        if (t.session) {
-          if (!sessionMap[t.session]) sessionMap[t.session] = 0;
-          sessionMap[t.session] += t.net_pnl;
-        }
-      });
-      let bestSession = "";
-      let bestSessionPnL = -Infinity;
-      Object.keys(sessionMap).forEach(sess => {
-        if (sessionMap[sess] > bestSessionPnL) {
-          bestSessionPnL = sessionMap[sess];
-          bestSession = sess;
-        }
-      });
-      if (bestSessionPnL > 0 && bestSession) insights.push(`💡 Ideal Window: The ${bestSession} session is your most profitable (+${blurMoney(bestSessionPnL)}). Schedule your best focus time here.`);
-      
-      // 6. Risk Management Check
+      if (worstDay >= 0) addInsight(`Avoid ${dayNames[worstDay]}s: You've lost ${blurMoney(Math.abs(worstDayPnL))} across ${dowPnL[worstDay].count} trades. Consider a no-trade day.`, 'behavior');
+
+      // 10. Outlier Loss
       const largestLoss = Math.min(...closed.map(t => t.net_pnl));
-      const avgLossAmt = losses.length > 0 ? losses.reduce((a,t) => a + Math.abs(t.net_pnl), 0) / losses.length : 0;
+      const avgLossAmt = losses.length > 0 ? losses.reduce((a, t) => a + Math.abs(t.net_pnl), 0) / losses.length : 0;
       if (Math.abs(largestLoss) > avgLossAmt * 2.5) {
-        insights.push(`🚨 Outlier Loss: Your largest loss (${blurMoney(largestLoss)}) is 2.5x your average. Review it — was it a discipline break or an acceptable risk?`);
+        addInsight(`Outlier Loss: Your largest loss (${blurMoney(largestLoss)}) is ${(Math.abs(largestLoss) / (avgLossAmt || 1)).toFixed(1)}x your average. Review the trade for discipline breaks.`, 'risk');
       }
-      
-      // 7. Monthly Trend
+
+      // 11. Monthly Trend
       const monthlyPnL: Record<string, number> = {};
       closed.forEach(t => {
         const monthKey = format(new Date(t.trade_date), "MMM yyyy");
@@ -272,36 +326,34 @@ export default function DashboardPage() {
         const lastMonth = months[months.length - 1];
         const prevMonth = months[months.length - 2];
         if (monthlyPnL[lastMonth] > monthlyPnL[prevMonth]) {
-          insights.push(`📊 Trending Up: ${lastMonth} (${monthlyPnL[lastMonth] > 0 ? '+' : ''}${blurMoney(monthlyPnL[lastMonth])}) outperformed ${prevMonth}. Keep doing what's working.`);
+          addInsight(`Trending Up: ${lastMonth} (${monthlyPnL[lastMonth] > 0 ? '+' : ''}${blurMoney(monthlyPnL[lastMonth])}) outperformed ${prevMonth}.`, 'behavior');
         } else if (monthlyPnL[lastMonth] < monthlyPnL[prevMonth] && monthlyPnL[lastMonth] < 0) {
-          insights.push(`📉 Trending Down: ${lastMonth} was your worst recent month (${blurMoney(monthlyPnL[lastMonth])}). Consider a strategy review.`);
+          addInsight(`Trending Down: ${lastMonth} was your worst recent month (${blurMoney(monthlyPnL[lastMonth])}). Consider a strategy review.`, 'risk');
         }
       }
-      
-      // 8. Criteria Confluence Factor
-      const criteriaImpact: Record<string, { present: number, absent: number }> = {};
-      closed.forEach(t => {
-        const allCriteria = (t.criteria_checked || []).map((c: any) => c.label);
-        // Check strategy/setups linked to criteria
-        if (allCriteria.length >= 3) {
-          // This trade had good confluence
-        }
-      });
-      
-      // 9. Overtrading Detection (3+ trades in one day)
+
+      // 12. Overtrading Detection
       const dayTradeCount: Record<string, number> = {};
-      closed.forEach(t => {
-        const d = t.trade_date;
-        dayTradeCount[d] = (dayTradeCount[d] || 0) + 1;
-      });
+      closed.forEach(t => { dayTradeCount[t.trade_date] = (dayTradeCount[t.trade_date] || 0) + 1; });
       const overtradeDays = Object.entries(dayTradeCount).filter(([_, count]) => count >= 3);
       if (overtradeDays.length > 0) {
-        const otPnL = overtradeDays.reduce((acc, [date]) => acc + closed.filter(t => t.trade_date === date).reduce((s,t) => s + t.net_pnl, 0), 0);
-        if (otPnL < 0) insights.push(`⚡ Overtrading Alert: ${overtradeDays.length} day(s) with 3+ trades cost you ${blurMoney(otPnL)}. Quality over quantity.`);
+        const otPnL = overtradeDays.reduce((acc, [date]) => acc + closed.filter(t => t.trade_date === date).reduce((s, t) => s + t.net_pnl, 0), 0);
+        if (otPnL < 0) addInsight(`Overtrading Alert: ${overtradeDays.length} day(s) with 3+ trades cost you ${blurMoney(otPnL)}. Quality over quantity.`, 'behavior');
+      }
+
+      // 13. R:R Capture Efficiency
+      if (closed.length >= 5) {
+        const plannedRRs = closed.map(t => t.weighted_avg_rr_planned).filter(v => v > 0);
+        const achievedRRs = closed.map(t => t.actual_rr_achieved).filter(v => v !== 0);
+        const avgPlanned = plannedRRs.length ? plannedRRs.reduce((a, b) => a + b, 0) / plannedRRs.length : 0;
+        const avgAchieved = achievedRRs.length ? achievedRRs.reduce((a, b) => a + b, 0) / achievedRRs.length : 0;
+        if (avgPlanned > 0 && avgAchieved < avgPlanned * 0.5) {
+          addInsight(`R:R Leak: You're capturing ${avgAchieved.toFixed(2)}R on average versus ${avgPlanned.toFixed(2)}R planned. Review trade management.`, 'risk');
+        }
       }
     }
 
-    if (insights.length === 0) insights.push("📊 Log at least 5 closed trades to unlock personalized Smart Insights. Each trade matters for your edge profile.");
+    if (insights.length === 0) insights.push({ text: "Log at least 5 closed trades to unlock personalized Smart Insights. Each trade matters for your edge profile.", category: 'recommendation' });
 
     return { 
       floatingPnL, 
@@ -429,23 +481,37 @@ export default function DashboardPage() {
         </div>
 
         {/* Algorithmic Trading Coach */}
-        <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 md:p-4 flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center animate-in slide-in-from-top-4 fade-in duration-500">
-          <div className="flex items-center gap-2 md:gap-3 shrink-0">
-            <div className="p-1.5 md:p-2 bg-primary text-primary-foreground rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 md:p-5 animate-in slide-in-from-top-4 fade-in duration-500">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-primary text-primary-foreground rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <h3 className="font-bold text-foreground uppercase tracking-wider text-xs md:text-sm">Smart Insights</h3>
+            <h3 className="font-bold text-foreground uppercase tracking-wider text-sm">Smart Insights</h3>
           </div>
-          <div className="w-full overflow-hidden relative">
-            {/* Simple fading carousel for insights */}
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none snap-x">
-              {stats.insights.map((insight: string, i: number) => (
-                <div key={i} className="shrink-0 snap-start bg-background/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-border/50 text-sm font-medium whitespace-nowrap">
-                  {insight}
-                </div>
-              ))}
+
+          {stats.insights.length === 1 && stats.insights[0].category === 'recommendation' ? (
+            <p className="text-sm text-text-muted">{stats.insights[0].text}</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {stats.insights.filter(insight => insight.category !== 'recommendation').map((insight, i) => {
+                const config = {
+                  edge: { icon: '🔥', border: 'border-win/30', bg: 'bg-win/5', text: 'text-win' },
+                  risk: { icon: '⚠️', border: 'border-loss/30', bg: 'bg-loss/5', text: 'text-loss' },
+                  behavior: { icon: '📊', border: 'border-accent/30', bg: 'bg-accent/5', text: 'text-accent' },
+                  recommendation: { icon: '💡', border: 'border-primary/30', bg: 'bg-primary/5', text: 'text-primary' },
+                }[insight.category];
+                return (
+                  <div key={i} className={`p-3 rounded-lg border ${config.border} ${config.bg} flex gap-3 items-start`}>
+                    <span className="text-lg leading-none mt-0.5">{config.icon}</span>
+                    <div>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${config.text}`}>{insight.category}</span>
+                      <p className="text-sm text-foreground mt-0.5 leading-snug">{insight.text}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Psychology Tracker */}

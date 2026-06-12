@@ -47,18 +47,30 @@ export default function ResetPasswordPage() {
           throw new Error("Invalid or expired reset link.");
         }
       } catch (error: unknown) {
-        toast({
-          title: "Invalid Reset Link",
-          description: (error as Error).message,
-          variant: "destructive",
-        });
-        setIsValidLink(false);
-      } finally {
-        setIsLoading(false);
+        // Don't show error immediately; the session listener below may recover it
+        console.error("Reset link exchange failed:", error);
       }
     }
 
+    // Fallback listener: Supabase may automatically set session from URL hash
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        setIsValidLink(true);
+        setIsLoading(false);
+      }
+    });
+
     handleRecovery();
+
+    // Show expired only after giving listener time to fire
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 2500);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [toast]);
 
   async function handleSubmit(e: React.FormEvent) {

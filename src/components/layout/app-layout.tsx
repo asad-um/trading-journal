@@ -11,7 +11,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { usePrivacy } from "@/components/privacy-provider";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Portfolio } from "@/types";
 
@@ -40,6 +40,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return false;
   });
 
+  // Mobile: translucent floating logout icon that fades as user scrolls down
+  const [logoutOpacity, setLogoutOpacity] = useState(0.85);
+  const mainRef = useRef<HTMLElement>(null);
+  const lastScrollY = useRef(0);
+
   useEffect(() => {
     async function loadPortfolios() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -52,6 +57,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       }
     }
     loadPortfolios();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const main = mainRef.current;
+    if (!main) return;
+
+    const handleScroll = () => {
+      const y = main.scrollTop;
+      const direction = y > lastScrollY.current ? 'down' : 'up';
+      lastScrollY.current = y;
+
+      if (y < 30) {
+        setLogoutOpacity(0.85);
+        return;
+      }
+      if (direction === 'down') {
+        setLogoutOpacity(0.2);
+      } else {
+        setLogoutOpacity(0.55);
+      }
+    };
+
+    main.addEventListener('scroll', handleScroll, { passive: true });
+    return () => main.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleSwitchPortfolio = async (id: string) => {
@@ -169,20 +199,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden pb-16 md:pb-0 relative bg-background">
+      <main ref={mainRef} className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden pb-16 md:pb-0 relative bg-background">
         {children}
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background-secondary flex items-center justify-around px-2 z-50">
-        {navItems.filter(i => i.href !== '/help').map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background-secondary flex items-center justify-around px-2 z-50 overflow-x-auto">
+        {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full transition-all duration-300",
+                "flex flex-col items-center justify-center min-w-[3.5rem] w-full h-full transition-all duration-300 px-1",
                 isActive ? "text-accent scale-110" : "text-text-secondary"
               )}
             >
@@ -203,10 +233,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile Logout Button */}
       <button
         onClick={signOut}
-        className="md:hidden fixed top-4 right-4 z-50 p-2 rounded-full bg-background-secondary border border-border shadow-md hover:bg-background-tertiary active:scale-95 transition-all"
+        style={{ opacity: logoutOpacity }}
+        className="md:hidden fixed top-4 right-4 z-50 p-2.5 rounded-full bg-background/60 backdrop-blur-md border border-border/50 shadow-sm text-text-secondary hover:text-loss active:scale-95 transition-opacity duration-300"
         title="Log Out"
       >
-        <LogOut className="h-4 w-4 text-text-secondary" />
+        <LogOut className="h-4 w-4" />
       </button>
     </div>
   );

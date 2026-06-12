@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TradeFilters } from "@/hooks/use-trade-filters";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 
 interface TradeFiltersProps {
   filters: TradeFilters;
@@ -13,33 +14,47 @@ interface TradeFiltersProps {
   activeFilterCount: number;
   strategies?: string[];
   sessions?: string[];
+  defaultExpanded?: boolean;
 }
 
 const STATUS_OPTIONS = ["Open", "Partial", "Closed - Win", "Closed - Loss", "Breakeven", "Cancelled"];
 const DIRECTION_OPTIONS = ["Long", "Short"];
 const SESSION_OPTIONS = ["Asia", "London", "NYSE", "London/NYSE Overlap", "Off-Hours"];
 
-export function TradeFiltersPanel({ filters, setFilter, clearFilters, activeFilterCount, strategies = [], sessions = SESSION_OPTIONS }: TradeFiltersProps) {
+export function TradeFiltersPanel({ filters, setFilter, clearFilters, activeFilterCount, strategies = [], sessions = SESSION_OPTIONS, defaultExpanded = false }: TradeFiltersProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
   return (
-    <div className="space-y-4 bg-background-secondary/50 border border-border/60 rounded-xl p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+    <div className="bg-background-secondary/50 border border-border/60 rounded-xl p-3">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between text-sm font-semibold text-foreground hover:text-primary transition-colors"
+      >
+        <div className="flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4" />
-          Filters
+          <span className="hidden sm:inline">Filters</span>
           {activeFilterCount > 0 && (
-            <span className="ml-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full">
+            <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full">
               {activeFilterCount}
             </span>
           )}
         </div>
-        {activeFilterCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs text-text-muted hover:text-foreground">
-            <X className="h-3 w-3 mr-1" /> Clear
-          </Button>
-        )}
-      </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="flex items-center gap-2">
+          {activeFilterCount > 0 && (
+            <span
+              onClick={(e) => { e.stopPropagation(); clearFilters(); }}
+              className="text-xs text-text-muted hover:text-foreground cursor-pointer"
+            >
+              Clear
+            </span>
+          )}
+          {expanded ? <ChevronUp className="h-4 w-4 text-text-muted" /> : <ChevronDown className="h-4 w-4 text-text-muted" />}
+        </div>
+      </button>
+
+      {expanded && (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
         <Input
           placeholder="Symbol..."
           value={filters.symbol}
@@ -110,6 +125,7 @@ export function TradeFiltersPanel({ filters, setFilter, clearFilters, activeFilt
           placeholder="To date"
         />
       </div>
+      )}
     </div>
   );
 }

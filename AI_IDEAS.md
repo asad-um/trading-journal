@@ -3,6 +3,8 @@
 > Brainstormed by AI (Cline) for the WJournal trading journal project.
 > This document serves as a living roadmap for architecture and analytics enhancements.
 
+> **Last Batch Integrated: Batch 8 (2026-06-12)** — Session time ranges, strategy-aligned criteria, collapsible filters, help refresh, Smart Insights v3, reset-password reliability, mobile nav/logout polish.
+
 ---
 
 ## Table of Contents
@@ -665,3 +667,7 @@ IF consecutive_losses >= 3
 2. **Monthly performance table** → Reuse existing stats calculation
 3. **Consecutive streak display** → Simple array loop
 4. **Sharpe ratio** → Formula uses data you already have
+5. **Strategy-aligned validation criteria** → ✅ Done in Batch 8
+6. **Collapsible filters panel** → ✅ Done in Batch 8
+7. **Help/Guides refresh + mobile nav** → ✅ Done in Batch 8
+8. **Smart Insights v3** → ✅ Done in Batch 8

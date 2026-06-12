@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { tradeSchema, TradeFormValues } from "@/lib/validations/trade";
 import { supabase } from "@/lib/supabase";
 import { calculateRR, calculateWeightedRR, calculateRiskAmount, calculateGrossPnL, detectSession, validateTPSplits } from "@/lib/calculations";
-import { normalizeStrategiesList } from "@/lib/defaults";
+import { normalizeStrategiesList, DEFAULT_CRITERIA_BY_STRATEGY } from "@/lib/defaults";
 import { UserSettings, Profile } from "@/types";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -238,20 +238,18 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
   }, [settings?.strategies_list]);
 
   const applyStrategyCriteria = () => {
-    if (!settings?.criteria_list?.length) return;
+    if (!strategy) return;
 
     const existing = form.getValues("criteria_checked") || [];
-    const merged = settings.criteria_list.map((c: { id: string; label: string }) => {
-      const prev = existing.find((item: { id: string }) => item.id === c.id);
-      return {
-        id: c.id,
-        label: c.label,
-        checked: prev?.checked ?? false
-      };
+    const strategyCriteria = DEFAULT_CRITERIA_BY_STRATEGY[strategy] || [];
+    const merged = strategyCriteria.map((label: string, idx: number) => {
+      const id = `${strategy.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${idx + 1}`;
+      const prev = existing.find((item: { id: string }) => item.id === id);
+      return { id, label, checked: prev?.checked ?? false };
     });
 
     replaceCriteria(merged);
-    toast({ title: "Criteria Synced", description: `Updated checklist with ${merged.length} items from your settings.` });
+    toast({ title: "Criteria Synced", description: `Loaded ${merged.length} ${strategy} validation criteria.` });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'pre' | 'post') => {
@@ -376,7 +374,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       const activePort = activePorts?.[0];
       if (!activePort) throw new Error("No active account selected. Please select one in the sidebar.");
 
-      const sessionDetected = detectSession(data.trade_time_utc || "14:30");
+      const sessionDetected = detectSession(data.trade_time_utc || "14:30", settings?.sessions_list || []);
 
       const net_pnl = calculateGrossPnL(data.tp_levels.map((t: any) => ({ rr: t.rr, positionPercent: t.position_percent })), riskAmount, Array.isArray(data.tps_hit) ? data.tps_hit : [], !!data.sl_hit);
       const actual_rr_achieved = riskAmount ? (net_pnl / riskAmount) : 0;

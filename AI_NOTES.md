@@ -17,6 +17,7 @@
 | Batch 5 | Playbooks nested customization in Settings, expand asset list | ✅ Pushed |
 | Batch 6 | Fix MASTER_FIX SQL cascade error, fix password reset flow to force new password | ✅ Pushed |
 | Batch 7 | Fix Select empty-value crash, collapsible Playbooks, sessions customization, image label dropdown, reset-password middleware fix | ✅ Pushed |
+| Batch 8 | Strategy-aligned criteria, session time ranges, collapsible filters, remove duplicate symbol filter, help/guides refresh, reset-password fix, mobile logout fade, Smart Insights v3 | ✅ Pushed |
 
 ### Outstanding Issues from User Feedback
 1. **Playbooks Customization** — Settings tab exists but uses flat "Strategy | Playbook" strings. Need nested strategy/playbook editing (add/edit/delete parent strategies and child playbooks). ✅ Implemented in Batch 5/7.
@@ -37,6 +38,15 @@
 - Refined criteria auto-fill: now syncs checklist with user's settings criteria list while preserving existing checked state, instead of force-checking all boxes.
 - Replaced free-text image caption inputs with Pre-Trade/Post-Trade dropdown selects.
 - Fixed `/reset-password` not loading from email link by adding the route to `middleware.ts` auth-route allowlist so unauthenticated users can reach it.
+
+### Batch 8 Implementation Notes
+- Added `DEFAULT_CRITERIA_BY_STRATEGY` map in `defaults.ts`; `applyStrategyCriteria()` in `trade-form.tsx` now loads strategy-specific criteria on auto-fill.
+- Expanded `sessions_list` type to include `start_time` and `end_time`; updated Settings UI to edit time windows; `detectSession()` now matches trades against user-defined UTC windows (supports overnight ranges).
+- Made `TradeFiltersPanel` collapsible with an icon toggle, active-filter badge, and smooth expand/collapse; removed standalone "Filter symbols..." input from `DataTable`.
+- Refreshed `help/page.tsx` content for new features (sessions, filters, strategy criteria) and added FAQ entries for password reset + Smart Insights.
+- Fixed `/reset-password` "Link Expired" false-positive by adding `onAuthStateChange` fallback listener and delaying the error state; allowed authenticated users to remain on `/reset-password` in middleware.
+- Updated mobile bottom nav in `app-layout.tsx` to include Help/Guides and made the floating logout icon translucent with scroll-based opacity fade.
+- Reworked Smart Insights on Dashboard into categorized cards (edge/risk/behavior/recommendation) with new analytics: strategy/playbook win rate, best timeframe, criteria compliance, R:R capture efficiency.
 
 ## Session: 2026-06-11
 

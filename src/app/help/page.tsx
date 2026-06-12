@@ -73,18 +73,46 @@ export default function HelpPage() {
                 How do I create and use my own custom Trading Strategy?
               </AccordionTrigger>
               <AccordionContent className="text-text-muted leading-relaxed space-y-4 pb-4">
-                <p>You aren't locked into the default Wyckoff or ICT templates. You can build your own playbook from scratch:</p>
+                <p>You aren't locked into the default templates. Build your own playbook hierarchy:</p>
                 <ol className="list-decimal list-inside space-y-2 ml-2">
-                  <li>Navigate to the <strong>Settings</strong> page and click the <strong>Playbooks</strong> tab.</li>
-                  <li>In the input box, type your strategy using this exact format: <strong>Strategy Name | Playbook Name</strong> (For example: <em>Price Action | Support Bounce</em>).</li>
-                  <li>Hit the Plus icon to save it.</li>
-                  <li>Next, click the <strong>Checklists</strong> tab and add all the specific rules you use to validate that trade (e.g., <em>Volume Spike, Double Bottom</em>).</li>
+                  <li>Navigate to <strong>Settings</strong> and click the <strong>Playbooks</strong> tab.</li>
+                  <li>Use the editor to add a Strategy (e.g., <em>My Strategy</em>) and then add Playbooks under it (e.g., <em>Breakout Model</em>, <em>Reversal Model</em>).</li>
+                  <li>Your strategies and playbooks will appear as dropdown options when logging a trade.</li>
                 </ol>
-                <p>The next time you log a trade, your custom strategy will appear perfectly in the dropdown menus!</p>
+                <p>When you select a strategy, click <strong>Auto-fill Criteria</strong> in the Validation Checklist section to load strategy-specific confirmation rules.</p>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="guide-3" className="border border-border/60 bg-background-secondary/30 rounded-xl px-5 shadow-sm">
+              <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors font-semibold py-4">
+                How do Trading Sessions work?
+              </AccordionTrigger>
+              <AccordionContent className="text-text-muted leading-relaxed space-y-4 pb-4">
+                <p>Sessions tag trades based on the UTC execution time you enter.</p>
+                <ol className="list-decimal list-inside space-y-2 ml-2">
+                  <li>Go to <strong>Settings</strong> &rarr; <strong>Trading Sessions</strong>.</li>
+                  <li>Each session has a name and a UTC time window (start time and end time).</li>
+                  <li>When you log a trade, the journal compares the trade time against your windows and tags it automatically.</li>
+                </ol>
+                <p className="text-xs border-l-2 border-primary pl-3 py-1 bg-primary/5 rounded-r-md"><strong>Tip:</strong> You can define overnight sessions (e.g. 22:00 – 04:00) and the journal will handle them correctly.</p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="guide-4" className="border border-border/60 bg-background-secondary/30 rounded-xl px-5 shadow-sm">
+              <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors font-semibold py-4">
+                How do I use Filters in the Trade Log?
+              </AccordionTrigger>
+              <AccordionContent className="text-text-muted leading-relaxed space-y-4 pb-4">
+                <p>The Trade Log has a compact filter bar to help you drill into your data:</p>
+                <ol className="list-decimal list-inside space-y-2 ml-2">
+                  <li>Click the <strong>Filters</strong> icon to expand the filter panel.</li>
+                  <li>Filter by symbol, strategy, status, direction, session, or date range.</li>
+                  <li>The active filter count is shown on the icon so you know when filters are applied.</li>
+                </ol>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="guide-5" className="border border-border/60 bg-background-secondary/30 rounded-xl px-5 shadow-sm">
               <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors font-semibold py-4">
                 How do I track my FTMO/Prop Firm account separately?
               </AccordionTrigger>
@@ -118,6 +146,18 @@ export default function HelpPage() {
               <AccordionTrigger className="hover:no-underline font-medium text-sm">What happens if I click Factory Reset?</AccordionTrigger>
               <AccordionContent className="text-text-muted text-sm pb-4">
                 A Factory Reset is a nuclear option. It will permanently delete every single trade, every portfolio, and every ledger deposit you have ever made. It leaves your login and custom strategy names intact, but returns your entire journal back to a blank $0.00 slate. Use it with extreme caution.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq-3" className="border-b border-border/50 px-2">
+              <AccordionTrigger className="hover:no-underline font-medium text-sm">Why does my password reset link say "Link Expired"?</AccordionTrigger>
+              <AccordionContent className="text-text-muted text-sm pb-4">
+                Password reset links from Supabase are single-use and time-sensitive. Make sure you open the link in the same browser where you requested it. If it expired, request a new one from the login page.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq-4" className="border-b border-border/50 px-2">
+              <AccordionTrigger className="hover:no-underline font-medium text-sm">What are Smart Insights?</AccordionTrigger>
+              <AccordionContent className="text-text-muted text-sm pb-4">
+                Smart Insights analyze your closed trades to surface your statistical edge: best/worst symbols, ideal sessions, long/short bias, losing streak warnings, overtrading alerts, and more. Log at least 5 closed trades to unlock most insights.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
