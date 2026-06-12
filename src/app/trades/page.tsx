@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { UserSettings } from "@/types";
 import { AppLayout } from "@/components/layout/app-layout";
 import { supabase } from "@/lib/supabase";
 import { Trade } from "@/types";
@@ -16,9 +17,11 @@ import { useToast } from "@/hooks/use-toast";
 import { usePrivacy } from "@/components/privacy-provider";
 import { useTradeFilters, applyTradeFilters } from "@/hooks/use-trade-filters";
 import { TradeFiltersPanel } from "@/components/trades/trade-filters";
+import { normalizeStrategiesList } from "@/lib/defaults";
 
 export default function TradesPage() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { blurMoney } = usePrivacy();
@@ -39,19 +42,23 @@ export default function TradesPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("trades")
-        .select("id, trade_date, symbol, direction, schematic, entry_event, net_pnl, actual_rr_achieved, status, session, asset_class, strategy, sub_strategy")
-        .eq("user_id", user.id)
-        .eq("portfolio_id", activePortfolio.id)
-        .order("trade_date", { ascending: false })
-        .limit(100);
+      const [{ data, error }, { data: settingsRes }] = await Promise.all([
+        supabase
+          .from("trades")
+          .select("id, trade_date, symbol, direction, schematic, entry_event, net_pnl, actual_rr_achieved, status, session, asset_class, strategy, sub_strategy")
+          .eq("user_id", user.id)
+          .eq("portfolio_id", activePortfolio.id)
+          .order("trade_date", { ascending: false })
+          .limit(100),
+        supabase.from('user_settings').select('*').eq('user_id', user.id).single()
+      ]);
   
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else if (data) {
         setTrades(data as any[]); // eslint-disable-line @typescript-eslint/no-explicit-any
       }
+      if (settingsRes) setSettings(settingsRes);
       setIsLoading(false);
     }
     fetchTrades();
@@ -67,12 +74,9 @@ export default function TradesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this trade?")) return;
     
-    // First, fetch the trade to see if it has images attached that need to be destroyed
     const { data: tradeData } = await supabase.from("trades").select("pre_trade_images, post_trade_images").eq("id", id).single();
-    
     const { error } = await supabase.from("trades").delete().eq("id", id);
     
-    // If deletion succeeded, trigger asynchronous garbage collection for Cloudinary
     if (!error && tradeData) {
       const allImages = [
         ...(tradeData.pre_trade_images || []), 
@@ -104,8 +108,18 @@ export default function TradesPage() {
     }
   };
 
-  const strategies = Array.from(new Set(trades.map(t => t.strategy).filter(Boolean))) as string[];
-  const sessions = Array.from(new Set(trades.map(t => t.session).filter(Boolean))) as string[];
+  // Strategy options = configured playbooks + any strategies actually used in trades
+  const configuredStrategies = settings?.strategies_list
+    ? normalizeStrategiesList(settings.strategies_list).map(s => s.name)
+    : [];
+  const tradeStrategies = Array.from(new Set(trades.map(t => t.strategy).filter(Boolean))) as string[];
+  const strategies = Array.from(new Set([...configuredStrategies, ...tradeStrategies]));
+
+  // Session options = configured sessions + any session values actually tagged on trades
+  const configuredSessions = settings?.sessions_list?.map((s: any) => s.label) || [];
+  const tradeSessions = Array.from(new Set(trades.map(t => t.session).filter(Boolean))) as string[];
+  const sessions = Array.from(new Set([...configuredSessions, ...tradeSessions]));
+
   const filteredTrades = isHydrated ? applyTradeFilters(trades, filters) : trades;
 
   const getStatusColor = (status: string) => {
@@ -133,6 +147,7 @@ export default function TradesPage() {
           activeFilterCount={activeFilterCount}
           strategies={strategies}
           sessions={sessions.length > 0 ? sessions : undefined}
+          defaultExpanded={activeFilterCount > 0}
         />
 
         {isLoading ? (
@@ -143,7 +158,7 @@ export default function TradesPage() {
             <p className="text-sm">{activeFilterCount > 0 ? "Try clearing your filters." : "Start by logging your first trade."}</p>
           </div>
         ) : (
-                    <div className="hidden md:block">
+          <div className="hidden md:block">
             <DataTable 
               data={filteredTrades} 
               columns={[
