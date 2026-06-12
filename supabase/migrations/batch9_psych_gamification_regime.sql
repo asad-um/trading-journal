@@ -22,17 +22,41 @@ CREATE TABLE IF NOT EXISTS public.user_gamification (
 
 ALTER TABLE public.user_gamification ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can read own gamification"
-  ON public.user_gamification
-  FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_gamification'
+      AND policyname = 'Users can read own gamification'
+  ) THEN
+    CREATE POLICY "Users can read own gamification"
+      ON public.user_gamification
+      FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
 
-CREATE POLICY "Users can update own gamification"
-  ON public.user_gamification
-  FOR UPDATE
-  USING (auth.uid() = user_id);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_gamification'
+      AND policyname = 'Users can update own gamification'
+  ) THEN
+    CREATE POLICY "Users can update own gamification"
+      ON public.user_gamification
+      FOR UPDATE
+      USING (auth.uid() = user_id);
+  END IF;
 
-CREATE POLICY "Users can insert own gamification"
-  ON public.user_gamification
-  FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_gamification'
+      AND policyname = 'Users can insert own gamification'
+  ) THEN
+    CREATE POLICY "Users can insert own gamification"
+      ON public.user_gamification
+      FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
