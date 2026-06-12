@@ -1,6 +1,6 @@
 # WJournal Project Audit
 
-> Last updated: 2026-06-11
+> Last updated: 2026-06-12
 > Auditor: AI Code Review (Cline)
 > Scope: Full codebase architecture, security, and scalability review
 
@@ -144,6 +144,10 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 | 2026-06-11 | Mental Edge Duplicate Key Fix (UPSERT) | `dashboard/page.tsx` | ✅ Applied |
 | 2026-06-11 | Dashboard Recent Trades Limit (10→5) | `dashboard/page.tsx` | ✅ Applied |
 | 2026-06-11 | Danger Zone Standalone Settings Tab | `settings/page.tsx` | ✅ Applied |
+| 2026-06-12 | Nested Strategy Playbooks Editor | `settings/page.tsx`, `components/settings/playbooks-editor.tsx`, `types/index.ts`, `lib/defaults.ts` | ✅ Applied |
+| 2026-06-12 | Expanded Asset List + Migration | `supabase/migrations/batch5_playbooks_and_assets.sql`, `lib/defaults.ts` | ✅ Applied |
+| 2026-06-12 | MASTER_FIX SQL Cascade Fix | `supabase/migrations/MASTER_FIX_2026_06_11.sql` | ✅ Applied |
+| 2026-06-12 | Dedicated /reset-password Page | `login/page.tsx`, `reset-password/page.tsx` | ✅ Applied |
 
 ---
 
