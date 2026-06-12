@@ -64,6 +64,10 @@ $$;
 -- Drop old buggy triggers first
 DROP TRIGGER IF EXISTS tr_balance_calc ON trades;
 DROP TRIGGER IF EXISTS tr_balance_calc ON account_events;
+
+-- Drop portfolio-aware triggers before dropping the function they depend on
+DROP TRIGGER IF EXISTS tr_trades_balance ON trades;
+DROP TRIGGER IF EXISTS tr_account_events_balance ON account_events;
 DROP FUNCTION IF EXISTS recalculate_balance_v2();
 
 -- Create NEW portfolio-aware balance function

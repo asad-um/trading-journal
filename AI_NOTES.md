@@ -15,13 +15,19 @@
 | Batch 3 | Forgot Password rewrite, Mental Edge DB persistence, Settings collapse, Remove Fees, Rename Assets | ✅ Pushed |
 | Batch 4 | Shared trade filters (Playbook + Trade Log), 3 max images with flexible labels | ✅ Pushed |
 | Batch 5 | Playbooks nested customization in Settings, expand asset list | ✅ Pushed |
-| Batch 6 | Fix MASTER_FIX SQL cascade error, fix password reset flow to force new password | 🔄 NEXT |
+| Batch 6 | Fix MASTER_FIX SQL cascade error, fix password reset flow to force new password | ✅ Pushed |
 
 ### Outstanding Issues from User Feedback
 1. **Playbooks Customization** — Settings tab exists but uses flat "Strategy | Playbook" strings. Need nested strategy/playbook editing (add/edit/delete parent strategies and child playbooks).
 2. **More Assets** — Add GER40, NIKKEI, and additional global instruments beyond current list.
 3. **Password Reset Flow Bug** — Reset link logs user in directly without prompting for new password. Need dedicated reset handler.
-4. **MASTER_FIX SQL Error** — `DROP FUNCTION recalculate_balance_v2()` fails because triggers depend on it. Need to drop triggers first or use CASCADE.
+4. **MASTER_FIX SQL Error** — `DROP FUNCTION recalculate_balance_v2()` fails because triggers depend on it. Need to drop triggers first or use CASCADE. ✅ Fixed by dropping `tr_trades_balance` and `tr_account_events_balance` before dropping the function.
+
+### Batch 6 Implementation Notes
+- Created `/reset-password` page that handles PKCE `code` query param and legacy hash-token recovery flows.
+- Updated forgot-password email `redirectTo` from `/login` to `/reset-password`.
+- Reset page validates link, shows new-password form with confirmation, then calls `supabase.auth.updateUser({ password })`.
+- Fixed `MASTER_FIX_2026_06_11.sql` Section 2 trigger/function drop order to avoid `2BP01` dependency error.
 
 ## Session: 2026-06-11
 
