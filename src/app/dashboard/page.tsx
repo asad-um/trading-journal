@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { Trade, Profile } from "@/types";
 import { calculateFloatingPnL, calculateWinRate, calculateProfitFactor } from "@/lib/calculations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Target, Hash, Wallet, Loader2, ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react";
+import { Activity, Target, Hash, Wallet, Loader2, ArrowUpRight, ArrowDownRight, TrendingUp, ChevronUp, ChevronDown } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [disciplineScore, setDisciplineScore] = useState(3);
   const [avgMood, setAvgMood] = useState(0);
   const [avgDiscipline, setAvgDiscipline] = useState(0);
+  const [insightsOpen, setInsightsOpen] = useState(true);
   const { blurMoney } = usePrivacy();
   const { toast } = useToast();
 
@@ -481,37 +482,48 @@ export default function DashboardPage() {
         </div>
 
         {/* Algorithmic Trading Coach */}
-        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 md:p-5 animate-in slide-in-from-top-4 fade-in duration-500">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-primary text-primary-foreground rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <div className="bg-primary/10 border border-primary/30 rounded-xl overflow-hidden animate-in slide-in-from-top-4 fade-in duration-500">
+          <button
+            type="button"
+            onClick={() => setInsightsOpen(!insightsOpen)}
+            className="w-full flex items-center justify-between p-4 md:p-5 hover:bg-primary/5 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary text-primary-foreground rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <h3 className="font-bold text-foreground uppercase tracking-wider text-sm">Smart Insights</h3>
             </div>
-            <h3 className="font-bold text-foreground uppercase tracking-wider text-sm">Smart Insights</h3>
-          </div>
+            {insightsOpen ? <ChevronUp className="h-5 w-5 text-text-muted" /> : <ChevronDown className="h-5 w-5 text-text-muted" />}
+          </button>
 
-          {stats.insights.length === 1 && stats.insights[0].category === 'recommendation' ? (
-            <p className="text-sm text-text-muted">{stats.insights[0].text}</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {stats.insights.filter(insight => insight.category !== 'recommendation').map((insight, i) => {
-                const config = {
-                  edge: { icon: '🔥', border: 'border-win/30', bg: 'bg-win/5', text: 'text-win' },
-                  risk: { icon: '⚠️', border: 'border-loss/30', bg: 'bg-loss/5', text: 'text-loss' },
-                  behavior: { icon: '📊', border: 'border-accent/30', bg: 'bg-accent/5', text: 'text-accent' },
-                  recommendation: { icon: '💡', border: 'border-primary/30', bg: 'bg-primary/5', text: 'text-primary' },
-                }[insight.category];
-                return (
-                  <div key={i} className={`p-3 rounded-lg border ${config.border} ${config.bg} flex gap-3 items-start`}>
-                    <span className="text-lg leading-none mt-0.5">{config.icon}</span>
-                    <div>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${config.text}`}>{insight.category}</span>
-                      <p className="text-sm text-foreground mt-0.5 leading-snug">{insight.text}</p>
-                    </div>
-                  </div>
-                );
-              })}
+          <div className={`transition-all duration-300 ease-in-out ${insightsOpen ? 'max-h-[1200px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+            <div className="px-4 md:px-5 pb-4 md:pb-5">
+              {stats.insights.length === 1 && stats.insights[0].category === 'recommendation' ? (
+                <p className="text-sm text-text-muted">{stats.insights[0].text}</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {stats.insights.filter(insight => insight.category !== 'recommendation').map((insight, i) => {
+                    const config = {
+                      edge: { icon: '🔥', border: 'border-win/30', bg: 'bg-win/5', text: 'text-win' },
+                      risk: { icon: '⚠️', border: 'border-loss/30', bg: 'bg-loss/5', text: 'text-loss' },
+                      behavior: { icon: '📊', border: 'border-accent/30', bg: 'bg-accent/5', text: 'text-accent' },
+                      recommendation: { icon: '💡', border: 'border-primary/30', bg: 'bg-primary/5', text: 'text-primary' },
+                    }[insight.category];
+                    return (
+                      <div key={i} className={`p-3 rounded-lg border ${config.border} ${config.bg} flex gap-3 items-start`}>
+                        <span className="text-lg leading-none mt-0.5">{config.icon}</span>
+                        <div>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${config.text}`}>{insight.category}</span>
+                          <p className="text-sm text-foreground mt-0.5 leading-snug">{insight.text}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Psychology Tracker */}

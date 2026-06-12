@@ -314,27 +314,31 @@ export default function SettingsPage() {
                 </div>
                 {expandedSections.sessions ? <ChevronUp className="h-5 w-5 text-text-muted"/> : <ChevronDown className="h-5 w-5 text-text-muted"/>}
               </button>
-              <div className={`transition-all duration-300 ease-in-out ${expandedSections.sessions ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+              <div className={`transition-all duration-300 ease-in-out ${expandedSections.sessions ? 'max-h-[700px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
                 <CardContent className="space-y-3 pt-0 pb-6 px-4 md:px-6">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input placeholder="Session name..." value={newItemInputs['sessions_list'] || ""} onChange={e => setNewItemInputs(p => ({...p, sessions_list: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddSessionItem()} className="h-9 flex-1" />
-                    <div className="flex gap-2 items-center">
-                      <Input type="time" value={newItemInputs['sessions_list_start'] || "00:00"} onChange={e => setNewItemInputs(p => ({...p, sessions_list_start: e.target.value}))} className="h-9 w-[100px]" />
-                      <span className="text-xs text-text-muted">to</span>
-                      <Input type="time" value={newItemInputs['sessions_list_end'] || "00:00"} onChange={e => setNewItemInputs(p => ({...p, sessions_list_end: e.target.value}))} className="h-9 w-[100px]" />
-                      <Button size="sm" onClick={() => handleAddSessionItem()}><Plus className="h-4 w-4" /></Button>
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <Input placeholder="Session name..." value={newItemInputs['sessions_list'] || ""} onChange={e => setNewItemInputs(p => ({...p, sessions_list: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddSessionItem()} className="h-9 flex-1 min-w-0" />
+                    <div className="flex gap-2 items-center justify-between md:justify-start">
+                      <div className="flex items-center gap-2 bg-background-secondary rounded-md px-2 border border-border">
+                        <input type="time" value={newItemInputs['sessions_list_start'] || "00:00"} onChange={e => setNewItemInputs(p => ({...p, sessions_list_start: e.target.value}))} className="h-9 w-[90px] bg-transparent text-sm text-foreground focus:outline-none" />
+                        <span className="text-xs text-text-muted">to</span>
+                        <input type="time" value={newItemInputs['sessions_list_end'] || "00:00"} onChange={e => setNewItemInputs(p => ({...p, sessions_list_end: e.target.value}))} className="h-9 w-[90px] bg-transparent text-sm text-foreground focus:outline-none" />
+                      </div>
+                      <Button size="sm" onClick={() => handleAddSessionItem()} className="shrink-0"><Plus className="h-4 w-4" /></Button>
                     </div>
                   </div>
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                     {settings?.sessions_list?.map((item: any) => (
-                      <div key={item.id} className="flex justify-between items-center gap-2 p-2 bg-background-secondary rounded border border-border">
+                      <div key={item.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-2 bg-background-secondary rounded border border-border">
                         {editingItem?.listName === 'sessions_list' && editingItem?.id === item.id ? (
-                          <div className="flex-1 flex flex-col sm:flex-row gap-2">
-                            <Input value={editingItem.value} onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)} onKeyDown={e => e.key === 'Enter' && handleSaveSessionEdit()} className="h-8 text-sm flex-1" autoFocus placeholder="Session name" />
-                            <div className="flex gap-2 items-center">
-                              <Input type="time" value={editingItem.startTime || item.start_time} onChange={e => setEditingItem(prev => prev ? { ...prev, startTime: e.target.value } : null)} className="h-8 w-[100px] text-sm" />
-                              <span className="text-xs text-text-muted">to</span>
-                              <Input type="time" value={editingItem.endTime || item.end_time} onChange={e => setEditingItem(prev => prev ? { ...prev, endTime: e.target.value } : null)} className="h-8 w-[100px] text-sm" />
+                          <div className="flex-1 flex flex-col md:flex-row gap-2 w-full">
+                            <Input value={editingItem.value} onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)} onKeyDown={e => e.key === 'Enter' && handleSaveSessionEdit()} className="h-8 text-sm flex-1 min-w-0" autoFocus placeholder="Session name" />
+                            <div className="flex gap-2 items-center justify-between md:justify-start w-full md:w-auto">
+                              <div className="flex items-center gap-2 bg-background rounded-md px-2 border border-border">
+                                <input type="time" value={editingItem.startTime || item.start_time} onChange={e => setEditingItem(prev => prev ? { ...prev, startTime: e.target.value } : null)} className="h-8 w-[90px] bg-transparent text-sm text-foreground focus:outline-none" />
+                                <span className="text-xs text-text-muted">to</span>
+                                <input type="time" value={editingItem.endTime || item.end_time} onChange={e => setEditingItem(prev => prev ? { ...prev, endTime: e.target.value } : null)} className="h-8 w-[90px] bg-transparent text-sm text-foreground focus:outline-none" />
+                              </div>
                               <Button size="sm" variant="secondary" onClick={() => handleSaveSessionEdit()}>Save</Button>
                             </div>
                           </div>
@@ -344,7 +348,7 @@ export default function SettingsPage() {
                               <span className="text-sm truncate">{item.label}</span>
                               <span className="text-xs text-text-muted">{item.start_time} – {item.end_time} UTC</span>
                             </div>
-                            <div className="flex items-center shrink-0">
+                            <div className="flex items-center shrink-0 self-end sm:self-auto">
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={() => handleEditSessionItem(item)}><Pencil className="h-3.5 w-3.5" /></Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('sessions_list', item.id || "")}><Trash2 className="h-4 w-4" /></Button>
                             </div>

@@ -20,6 +20,10 @@ export default function ResetPasswordPage() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Suppress internal Supabase Realtime "You're the host" toast
+    // by removing any existing channels before processing the recovery link.
+    supabase.removeAllChannels();
+
     async function handleRecovery() {
       // Parse query params (PKCE code)
       const params = new URLSearchParams(window.location.search);
