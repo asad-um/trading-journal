@@ -628,6 +628,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                       <SelectItem value="Weekly">Weekly</SelectItem>
                       <SelectItem value="Daily">Daily</SelectItem>
                       <SelectItem value="4H">4H</SelectItem>
+                      <SelectItem value="1H">1H</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
@@ -644,6 +645,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                       <SelectItem value="1H">1H</SelectItem>
                       <SelectItem value="30M">30M</SelectItem>
                       <SelectItem value="15M">15M</SelectItem>
+                      <SelectItem value="5M">5M</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
