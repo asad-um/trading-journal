@@ -480,7 +480,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       if (currentSlHit) form.setValue('sl_hit', false, { shouldDirty: true });
       if (currentTpsHit.length > 0) form.setValue('tps_hit', [], { shouldDirty: true });
     }
-  }, [status, form]);
+  }, [status, sl_hit, tps_hit, form]);
 
   // Keyboard shortcut listener
   useEffect(() => {
