@@ -7,8 +7,9 @@ import { supabase } from "@/lib/supabase";
 import { Trade } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Edit, Trash2 } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, GitCompare, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { DataTable } from "@/components/trades/data-table";
 import { ColumnDef } from "@tanstack/react-table";
@@ -23,9 +24,11 @@ export default function TradesPage() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { blurMoney } = usePrivacy();
   const { filters, setFilter, clearFilters, activeFilterCount, isHydrated } = useTradeFilters();
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchTrades() {
@@ -105,7 +108,29 @@ export default function TradesPage() {
     } else {
       toast({ title: "Deleted", description: "Trade removed successfully" });
       setTrades(trades.filter(t => t.id !== id));
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        if (next.size >= 3) {
+          toast({ title: "Max 3 trades", description: "You can compare up to 3 trades at a time.", variant: "default" });
+          return prev;
+        }
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleCompare = () => {
+    if (selectedIds.size < 2) return;
+    router.push(`/trades/compare?ids=${Array.from(selectedIds).join(",")}`);
   };
 
   // Strategy options = configured playbooks + any strategies actually used in trades
@@ -135,10 +160,42 @@ export default function TradesPage() {
       <div className="p-4 md:p-6 space-y-6 flex-1 h-full flex flex-col">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Trade Log</h1>
-          <Link href="/trades/new" className="hidden md:block">
-            <Button><Plus className="mr-2 h-4 w-4" /> New Trade</Button>
-          </Link>
+          <div className="hidden md:flex items-center gap-2">
+            {selectedIds.size >= 2 && (
+              <Button variant="outline" onClick={handleCompare} className="border-primary/40 text-primary hover:bg-primary/10 gap-2">
+                <GitCompare className="h-4 w-4" />
+                Compare {selectedIds.size} Trades
+              </Button>
+            )}
+            {selectedIds.size > 0 && (
+              <Button variant="ghost" size="icon" onClick={() => setSelectedIds(new Set())} className="text-text-muted">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            <Link href="/trades/new">
+              <Button><Plus className="mr-2 h-4 w-4" /> New Trade</Button>
+            </Link>
+          </div>
         </div>
+
+        {/* Compare selection banner */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg text-sm animate-in slide-in-from-top-2 duration-200">
+            <GitCompare className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-foreground flex-1">
+              <span className="font-semibold text-primary">{selectedIds.size}</span> trade{selectedIds.size > 1 ? 's' : ''} selected
+              {selectedIds.size < 2 ? " — select 1 more to compare" : selectedIds.size < 3 ? " — ready to compare (or add 1 more)" : " — maximum reached"}
+            </span>
+            {selectedIds.size >= 2 && (
+              <Button size="sm" onClick={handleCompare} className="gap-1.5">
+                <GitCompare className="h-3.5 w-3.5" /> Compare
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-text-muted" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
 
         <TradeFiltersPanel
           filters={filters}
@@ -162,6 +219,29 @@ export default function TradesPage() {
             <DataTable 
               data={filteredTrades} 
               columns={[
+                {
+                  id: "select",
+                  header: () => (
+                    <span className="text-xs text-text-muted font-normal">Compare</span>
+                  ),
+                  cell: ({ row }) => {
+                    const id = row.original.id;
+                    const isSelected = selectedIds.has(id);
+                    return (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(id); }}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? 'bg-primary border-primary text-primary-foreground'
+                            : 'border-border hover:border-primary/60'
+                        }`}
+                        title={isSelected ? "Deselect" : "Select for comparison"}
+                      >
+                        {isSelected && <span className="text-[10px] font-bold">✓</span>}
+                      </button>
+                    );
+                  }
+                },
                 {
                   accessorKey: "trade_date",
                   header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="-ml-4 h-8 data-[state=open]:bg-accent/10">Date <ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
@@ -222,29 +302,47 @@ export default function TradesPage() {
         {/* Mobile View */}
         {!isLoading && (
           <div className="md:hidden space-y-4 pb-20">
-            {filteredTrades.map(trade => (
-              <div key={trade.id} className="bg-background-secondary border border-border p-4 rounded-lg">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold">{trade.symbol}</span>
-                    <Badge variant="outline" className={trade.direction === 'Long' ? "text-win border-win/30" : "text-loss border-loss/30"}>{trade.direction}</Badge>
+            {filteredTrades.map(trade => {
+              const isSelected = selectedIds.has(trade.id);
+              return (
+                <div key={trade.id} className={`bg-background-secondary border p-4 rounded-lg transition-all ${isSelected ? 'border-primary/60 ring-1 ring-primary/30' : 'border-border'}`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleSelect(trade.id)}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-border'}`}
+                      >
+                        {isSelected && <span className="text-[10px] font-bold">✓</span>}
+                      </button>
+                      <span className="font-bold">{trade.symbol}</span>
+                      <Badge variant="outline" className={trade.direction === 'Long' ? "text-win border-win/30" : "text-loss border-loss/30"}>{trade.direction}</Badge>
+                    </div>
+                    <Badge variant="outline" className={getStatusColor(trade.status)}>{trade.status}</Badge>
                   </div>
-                  <Badge variant="outline" className={getStatusColor(trade.status)}>{trade.status}</Badge>
-                </div>
-                <div className="flex justify-between items-end">
-                  <div className="text-sm text-text-muted">
-                    {format(new Date(trade.trade_date), "MMM dd")} • {trade.session}
+                  <div className="flex justify-between items-end">
+                    <div className="text-sm text-text-muted">
+                      {format(new Date(trade.trade_date), "MMM dd")} • {trade.session}
+                    </div>
+                    <div className={`font-mono text-lg font-bold ${trade.net_pnl > 0 ? "text-win" : trade.net_pnl < 0 ? "text-loss" : ""}`}>
+                      {trade.net_pnl > 0 ? "+" : ""}{blurMoney(trade.net_pnl)}
+                    </div>
                   </div>
-                  <div className={`font-mono text-lg font-bold ${trade.net_pnl > 0 ? "text-win" : trade.net_pnl < 0 ? "text-loss" : ""}`}>
-                    {trade.net_pnl > 0 ? "+" : ""}{blurMoney(trade.net_pnl)}
+                  <div className="mt-4 flex gap-2">
+                    <Link href={`/trades/${trade.id}`} className="flex-1"><Button variant="outline" className="w-full">View</Button></Link>
+                    <Button variant="outline" onClick={() => handleDelete(trade.id)} className="text-loss border-loss/30 hover:bg-loss/10"><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
-                <div className="mt-4 flex gap-2">
-                  <Link href={`/trades/${trade.id}`} className="flex-1"><Button variant="outline" className="w-full">View</Button></Link>
-                  <Button variant="outline" onClick={() => handleDelete(trade.id)} className="text-loss border-loss/30 hover:bg-loss/10"><Trash2 className="h-4 w-4" /></Button>
-                </div>
+              );
+            })}
+            {/* Mobile compare button */}
+            {selectedIds.size >= 2 && (
+              <div className="fixed bottom-20 left-4 right-4 z-50">
+                <Button className="w-full gap-2 shadow-lg" onClick={handleCompare}>
+                  <GitCompare className="h-4 w-4" />
+                  Compare {selectedIds.size} Trades
+                </Button>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
