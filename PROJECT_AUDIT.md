@@ -170,10 +170,67 @@ Browser → Supabase Client → PostgreSQL (RLS protected)
 | 7 | Mobile logout icon fades on scroll | `src/components/layout/app-layout.tsx` |
 | 8 | Smart Insights v3: categorized cards + new analytics | `src/app/dashboard/page.tsx` |
 
-## 9. Recommended Next Fixes (Priority Order)
+## 9. New Issues Identified (2026-06-17)
 
-1. **Add CSRF tokens** to all state-changing API routes
-2. **Add rate limiting** (Vercel Edge Config or API middleware)
+### CRITICAL (Open)
+| # | Issue | File | Root Cause |
+|---|-------|------|------------|
+| 9 | **New Account Invisible on Dashboard** | `account/page.tsx` | Portfolio created with `is_active: false`, no activation logic |
+| 10 | **Trade Status Infinite Loop (React #185)** | `trade-form.tsx` | Two `useEffect` hooks fight each other, even with dependencies |
+| 11 | **Trade Outcome Logic Too Rigid** | `calculations.ts`, `trade-form.tsx` | Assumes remaining position = full loss; doesn't support adjusted SL/breakeven |
+
+### HIGH (Open)
+| # | Issue | File | Impact |
+|---|-------|------|--------|
+| 12 | **Missing Trade Open/Close Time** | `trades` table, `trade-form.tsx` | Can't track trade duration or multi-day trades |
+| 13 | **No Clipboard Image Paste** | `trade-form.tsx` | Manual file selection only, slower workflow |
+| 14 | **Danger Zone Mobile Layout Broken** | `settings/page.tsx` | Previous fix didn't take effect |
+| 15 | **Horizontal Scrollbar in Nav Tabs (Mobile)** | `app-layout.tsx` | Overflow-x issue in section bar |
+
+### MEDIUM (Open)
+| # | Issue | File | Impact |
+|---|-------|------|--------|
+| 16 | **Statistics Page Architecture** | `statistics/page.tsx` | Needs componentization + responsive improvements |
+| 17 | **Smart Insights Limited** | `dashboard/page.tsx` | Narrow rule set, needs expansion |
+| 18 | **Psychological Metrics Basic** | `dashboard/page.tsx` | Missing revenge-trading detection, discipline trends |
+| 19 | **Gamification System Weak** | `user_gamification` table | XP curve flat, badges not meaningful |
+
+---
+
+## 10. Batched Fix Plan (2026-06-17)
+
+### BATCH 1 — Quick Wins (Low Risk)
+- **1a.** Activate new account on creation (set `is_active: true`, deactivate others)
+- **1b.** Fix Danger Zone mobile layout (proper responsive stack)
+- **1c.** Remove horizontal scrollbar in nav tabs (overflow-x / flex-wrap)
+
+### BATCH 2 — Trade Outcome Logic Overhaul (Medium Risk)
+- **2a.** Add `trade_open_time`, `trade_close_time` columns (DB migration) + form fields
+- **2b.** Decouple status from checkboxes (remove auto-sync `useEffect`, make independent)
+- **2c.** Add `exit_type` field (`Final TP`, `Stop Loss`, `Breakeven`, `Adjusted SL`) + `adjusted_sl_price`
+- **2d.** Rewrite `calculateGrossPnL` to handle adjusted SL / breakeven scenarios
+- **2e.** Enable full edit workflow (open → partial → closed with correct TP/SL combinations)
+
+### BATCH 3 — Clipboard Image Paste (Medium Risk)
+- Add paste event listener to Trade Screenshots section
+- Use same Cloudinary signed upload pipeline
+
+### BATCH 4 — Statistics Page Enhancement (Medium-High Risk)
+- Componentize large sections
+- Improve responsive layout
+- Add clearer metric visualizations
+
+### BATCH 5 — Intelligence Upgrades (High Effort)
+- **5a.** Expand Smart Insights rule engine (best/worst sessions, RR efficiency, overtrading, win-streak/cooldown, strategy edge decay)
+- **5b.** Enhance Psychological metrics (revenge-trading detection, discipline score trend, tilt warnings)
+- **5c.** Improve Gamification (better XP curve, meaningful badges, streaks)
+
+---
+
+## 11. Recommended Next Fixes (Priority Order)
+
+1. **Execute Batch 1+2** (critical bugs + trade logic redesign)
+2. **Add CSRF tokens** to all state-changing API routes
 3. **Refactor TradeForm** into sub-components
 4. **Add React Query / SWR** for client-side caching
 5. **Add DB indexes** on `trades(user_id, portfolio_id, trade_date)`

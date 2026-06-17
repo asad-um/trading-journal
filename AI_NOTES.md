@@ -130,6 +130,74 @@
 
 ---
 
+## Session: 2026-06-17
+
+### New User Feedback — Comprehensive Enhancement Request
+
+**Issues Reported:**
+1. **Danger Zone mobile layout still broken** — Previous fix didn't take effect
+2. **New account creation doesn't reflect on dashboard/statistics** — Account created with `is_active: false`, no activation logic
+3. **Trade Close/Win Close/Loss crash persists** — React #185 infinite loop still occurring despite previous fix
+4. **Trade outcome logic too rigid** — Need support for realistic scenarios: "3 of 5 TPs hit, then rolled back to SL/Breakeven/Adjusted SL"
+5. **Missing trade open/close time fields** — Need separate timestamps for trade lifecycle
+6. **Clipboard image paste not supported** — Want Ctrl+V paste for screenshots
+7. **Horizontal scrollbar in nav tabs on mobile** — Section bar (Help/Playbook/Settings) has overflow
+8. **Statistics page needs UI/architecture enhancement** — General improvement request
+9. **Smart Insights needs expansion** — Auto-suggest from wider variety of data-driven observations
+10. **Psychological metrics need enhancement** — Richer derived metrics
+11. **Gamification system needs improvement** — Better XP curve, meaningful badges
+
+### Root Cause Analysis
+
+**Account Creation Bug:**
+- In `handleCreateAccount` (account/page.tsx:162-227), new portfolio is created with `is_active: false` and there's **no logic to activate it**
+- Dashboard/statistics read the *active* portfolio only
+- **Fix:** Activate new account on creation (deactivate others)
+
+**Trade Outcome Crash:**
+- Two `useEffect` hooks fight each other creating infinite loop (React error #185)
+- Even the previous fix (adding dependencies) is fragile
+- **Real solution:** Remove auto-sync entirely, make TP/SL checkboxes + status independent fields, compute PnL at submit time
+
+**Trade Logic Limitations:**
+- Current `calculateGrossPnL` assumes: if SL hit after TPs, remaining position = full loss
+- Reality: Traders move SL to breakeven or above entry (adjusted SL), or close at different levels
+- **Need:** `exit_type` field (`Final TP`, `Stop Loss`, `Breakeven`, `Adjusted SL`) + optional `adjusted_sl_price`
+
+### Batched Implementation Plan
+
+**BATCH 1 — Quick Wins (Low Risk, CSS + small logic)**
+- 1a. Activate new account on creation so it shows on dashboard/stats immediately
+- 1b. Fix Danger Zone mobile layout (re-inspect actual rendered card, use proper responsive stack)
+- 1c. Remove horizontal scrollbar in section nav bar on mobile (overflow-x / flex-wrap fix)
+
+**BATCH 2 — Trade Outcome Logic Overhaul (Core, Medium Risk)**
+- 2a. Add `trade_open_time` and `trade_close_time` columns (DB migration) + form fields
+- 2b. Decouple status from checkboxes — kill infinite loop permanently
+- 2c. Support realistic outcome model: add `exit_type` field + `adjusted_sl_price`, rewrite `calculateGrossPnL`
+- 2d. Make editing work end-to-end: open floating trade, add close time, change to partial/closed with correct TP/SL
+
+**BATCH 3 — Clipboard Image Paste (Medium Risk)**
+- Enable Ctrl+V paste of images into Trade Screenshots (uses same Cloudinary pipeline)
+
+**BATCH 4 — Statistics Page Enhancement (Medium-High Risk)**
+- Audit and improve statistics page UI + architecture (componentization, responsive layout, clearer metrics)
+
+**BATCH 5 — Intelligence Upgrades (High Effort)**
+- 5a. Smart Insights — expand rule engine for wider variety of data-driven observations
+- 5b. Psychological metrics — richer derived metrics (revenge-trading detection, discipline score, tilt warnings)
+- 5c. Gamification — improve XP curve, meaningful badges tied to new outcome data, streaks
+
+### Open Questions for User
+
+1. **Adjusted SL behavior:** When SL moved above entry and hit, should remaining position use RR of adjusted-SL price, or manual PnL override?
+2. **Trade open/close time:** Separate date+time fields (multi-day trades) or just times on same `trade_date`?
+3. **Scope:** All 5 batches now, or start with Batch 1+2 (critical bugs + trade logic)?
+
+**Recommendations:** 1C (both auto + manual override), 2A (separate date+time), 3B (Batch 1+2 first)
+
+---
+
 ## Quick Reference
 
 ### Running the App
