@@ -218,7 +218,12 @@ export default function AccountPage() {
       }
     }
 
-    toast({ title: "Success", description: "New live account created." });
+    // Activate the new account: deactivate all others, then activate this one
+    // so it immediately shows on the dashboard and statistics page
+    await supabase.from('portfolios').update({ is_active: false }).eq('user_id', user.id).neq('id', newPortfolio!.id);
+    await supabase.from('portfolios').update({ is_active: true }).eq('id', newPortfolio!.id);
+
+    toast({ title: "Success", description: "New live account created and activated." });
     setIsCreateDialogOpen(false);
     setNewAccountName("");
     setNewAccountBalance("");

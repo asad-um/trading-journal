@@ -372,9 +372,9 @@ export default function SettingsPage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-loss text-base md:text-lg">Factory Reset</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col justify-between gap-4 h-full min-h-[180px]">
+                <CardContent className="flex flex-col gap-4">
                   <p className="text-sm text-text-muted">Permanently deletes all your trades, custom portfolios, and ledger events. Your login and settings will remain, and you will start fresh with a clean $0.00 Main Account.</p>
-                  <Button variant="outline" className="w-full text-loss border-loss/50 hover:bg-loss hover:text-white transition-all whitespace-normal h-auto py-2 mt-auto" onClick={async () => {
+                  <Button variant="outline" className="w-full text-loss border-loss/50 hover:bg-loss hover:text-white transition-all whitespace-normal h-auto py-3" onClick={async () => {
                     if(confirm("Are you absolutely sure you want to Factory Reset your journal? This cannot be undone.")) {
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) return;
@@ -406,9 +406,9 @@ export default function SettingsPage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-loss text-base md:text-lg">Delete Account</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col justify-between gap-4 h-full min-h-[180px]">
+                <CardContent className="flex flex-col gap-4">
                   <p className="text-sm text-text-muted">Permanently deletes your entire account, wiping all trade history, portfolio ledgers, custom playbooks, and authentication records from our servers.</p>
-                  <Button variant="destructive" className="w-full shadow-lg hover:shadow-xl transition-all whitespace-normal h-auto py-2 mt-auto" onClick={async () => {
+                  <Button variant="destructive" className="w-full shadow-lg hover:shadow-xl transition-all whitespace-normal h-auto py-3" onClick={async () => {
                     if(confirm("Are you absolutely sure you want to permanently delete your account and all data? This cannot be undone.")) {
                       try {
                         const res = await fetch('/api/delete-account', { method: 'POST' });
