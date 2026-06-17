@@ -169,24 +169,47 @@ export default function AccountPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setIsSubmittingEvent(false); return; }
 
-    // New accounts always start at $0. The first deposit sets the starting balance.
-    const { error } = await supabase.from('portfolios').insert({
-      user_id: user.id,
-      name: newAccountName.trim(),
-      starting_balance: 0,
-      current_balance: 0,
-      is_active: false
-    });
+    // Create the account starting at $0. If an initial balance was provided,
+    // record it as the first deposit so the trigger sets starting_balance
+    // and current_balance automatically.
+    const { data: newPortfolio, error: insertError } = await supabase
+      .from('portfolios')
+      .insert({
+        user_id: user.id,
+        name: newAccountName.trim(),
+        starting_balance: 0,
+        current_balance: 0,
+        is_active: false
+      })
+      .select('id')
+      .single();
 
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Success", description: "New live account created. Log a deposit to fund it." });
-      setIsCreateDialogOpen(false);
-      setNewAccountName("");
-      setNewAccountBalance("");
-      fetchData();
+    if (insertError) {
+      toast({ title: "Error", description: insertError.message, variant: "destructive" });
+      setIsSubmittingEvent(false);
+      return;
     }
+
+    const initialBalance = parseFloat(newAccountBalance);
+    if (!isNaN(initialBalance) && initialBalance > 0 && newPortfolio) {
+      const { error: eventError } = await supabase.from("account_events").insert({
+        user_id: user.id,
+        portfolio_id: newPortfolio.id,
+        event_type: 'deposit',
+        amount: initialBalance,
+        event_date: format(new Date(), "yyyy-MM-dd"),
+      });
+
+      if (eventError) {
+        toast({ title: "Warning", description: "Account created but initial deposit failed: " + eventError.message, variant: "destructive" });
+      }
+    }
+
+    toast({ title: "Success", description: "New live account created." });
+    setIsCreateDialogOpen(false);
+    setNewAccountName("");
+    setNewAccountBalance("");
+    fetchData();
     setIsSubmittingEvent(false);
   };
 
@@ -405,6 +428,21 @@ export default function AccountPage() {
                   className="h-10"
                   autoFocus
                 />
+              </div>
+              <div>
+                <Label htmlFor="accBal" className="text-xs uppercase tracking-wider text-text-muted mb-2 block">
+                  Initial Balance <span className="text-text-muted font-normal normal-case">(optional)</span>
+                </Label>
+                <Input
+                  id="accBal"
+                  type="number"
+                  step="0.01"
+                  value={newAccountBalance}
+                  onChange={(e) => setNewAccountBalance(e.target.value)}
+                  placeholder="Leave blank to start at $0"
+                  className="h-10 font-mono"
+                />
+                <p className="text-xs text-text-muted mt-1">If provided, this will be recorded as the account's first deposit.</p>
               </div>
             </div>
             <DialogFooter>
