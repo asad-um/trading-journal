@@ -193,7 +193,69 @@ export default function StatisticsPage() {
       .filter(t => t.total >= 2) // Need at least 2 trades for statistical relevance
       .sort((a, b) => b.winRate - a.winRate);
 
-    return { wr, pf, dd, netPnL, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency, bestTrades, worstTrades, timeframePerformance };
+    // Session Performance
+    const sessionStats: Record<string, { wins: number; total: number; netPnL: number; totalRR: number }> = {};
+    closed.forEach(t => {
+      const s = t.session || 'Off-Hours';
+      if (!sessionStats[s]) sessionStats[s] = { wins: 0, total: 0, netPnL: 0, totalRR: 0 };
+      sessionStats[s].total += 1;
+      if (t.net_pnl > 0) sessionStats[s].wins += 1;
+      sessionStats[s].netPnL += t.net_pnl;
+      sessionStats[s].totalRR += (t.actual_rr_achieved || 0);
+    });
+    const sessionPerformance = Object.entries(sessionStats)
+      .map(([name, d]) => ({ name, winRate: (d.wins / d.total) * 100, total: d.total, netPnL: d.netPnL, avgRR: d.total > 0 ? d.totalRR / d.total : 0 }))
+      .sort((a, b) => b.winRate - a.winRate);
+
+    // Asset Performance
+    const assetStats: Record<string, { wins: number; total: number; netPnL: number }> = {};
+    closed.forEach(t => {
+      const sym = t.symbol || 'Unknown';
+      if (!assetStats[sym]) assetStats[sym] = { wins: 0, total: 0, netPnL: 0 };
+      assetStats[sym].total += 1;
+      if (t.net_pnl > 0) assetStats[sym].wins += 1;
+      assetStats[sym].netPnL += t.net_pnl;
+    });
+    const assetPerformance = Object.entries(assetStats)
+      .map(([name, d]) => ({ name, winRate: (d.wins / d.total) * 100, total: d.total, netPnL: d.netPnL }))
+      .sort((a, b) => b.netPnL - a.netPnL);
+
+    // Direction breakdown
+    const longTrades = closed.filter(t => t.direction === 'Long');
+    const shortTrades = closed.filter(t => t.direction === 'Short');
+    const longWR = longTrades.length > 0 ? (longTrades.filter(t => t.net_pnl > 0).length / longTrades.length) * 100 : 0;
+    const shortWR = shortTrades.length > 0 ? (shortTrades.filter(t => t.net_pnl > 0).length / shortTrades.length) * 100 : 0;
+    const longPnL = longTrades.reduce((a, t) => a + t.net_pnl, 0);
+    const shortPnL = shortTrades.reduce((a, t) => a + t.net_pnl, 0);
+
+    // Consecutive streaks
+    let currentWinStreak = 0, currentLossStreak = 0, maxWinStreak = 0, maxLossStreak = 0;
+    let tempWin = 0, tempLoss = 0;
+    const sortedClosed = [...closed].sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
+    sortedClosed.forEach(t => {
+      if (t.net_pnl > 0) { tempWin++; tempLoss = 0; if (tempWin > maxWinStreak) maxWinStreak = tempWin; }
+      else if (t.net_pnl < 0) { tempLoss++; tempWin = 0; if (tempLoss > maxLossStreak) maxLossStreak = tempLoss; }
+    });
+    // Current streak (from end)
+    for (let i = sortedClosed.length - 1; i >= 0; i--) {
+      if (sortedClosed[i].net_pnl > 0) { if (currentLossStreak === 0) currentWinStreak++; else break; }
+      else if (sortedClosed[i].net_pnl < 0) { if (currentWinStreak === 0) currentLossStreak++; else break; }
+      else break;
+    }
+
+    // Avg trade duration (minutes) — only for trades with close time
+    const tradesWithDuration = closed.filter((t: any) => t.trade_close_time);
+    const avgDurationMins = tradesWithDuration.length > 0
+      ? tradesWithDuration.reduce((acc: number, t: any) => {
+          try {
+            const open = new Date(`${t.trade_date}T${t.trade_time_utc || '00:00'}:00Z`).getTime();
+            const close = new Date(t.trade_close_time).getTime();
+            return acc + Math.max(0, (close - open) / 60000);
+          } catch { return acc; }
+        }, 0) / tradesWithDuration.length
+      : null;
+
+    return { wr, pf, dd, netPnL, avgWin, avgLoss, expectancy, recoveryFactor, strategyPerformance, criteriaPerformance, timeOfDayData, drawdownData, rrEfficiency, bestTrades, worstTrades, timeframePerformance, sessionPerformance, assetPerformance, longTrades: longTrades.length, shortTrades: shortTrades.length, longWR, shortWR, longPnL, shortPnL, currentWinStreak, currentLossStreak, maxWinStreak, maxLossStreak, avgDurationMins };
   }, [profile, trades]);
 
   if (isLoading) return <AppLayout><div className="flex h-full items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div></AppLayout>;
@@ -474,6 +536,112 @@ export default function StatisticsPage() {
                       <div className="text-right">
                         <p className={`font-bold ${tf.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{(tf.winRate || 0).toFixed(1)}%</p>
                         <p className={`text-xs font-mono mt-1 ${tf.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{tf.netPnL > 0 ? "+" : ""}{blurMoney(tf.netPnL)}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Session Performance + Direction Analysis */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base md:text-lg">Session Performance</CardTitle>
+                  <CardDescription className="text-xs md:text-sm">Win rate and avg R:R by trading session.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(stats.sessionPerformance || []).length === 0 ? (
+                    <p className="text-sm text-text-muted text-center py-4">No session data available.</p>
+                  ) : (
+                    stats.sessionPerformance.map((s: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center p-3 bg-background-secondary rounded-lg border border-border">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate pr-2">{s.name}</p>
+                          <p className="text-xs text-text-muted mt-0.5">{s.total} trades · avg {s.avgRR.toFixed(2)}R</p>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <p className={`font-bold text-sm ${s.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{s.winRate.toFixed(1)}%</p>
+                          <p className={`text-xs font-mono mt-0.5 ${s.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{s.netPnL > 0 ? '+' : ''}{blurMoney(s.netPnL)}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base md:text-lg">Direction Analysis</CardTitle>
+                  <CardDescription className="text-xs md:text-sm">Long vs Short performance breakdown.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 bg-win/5 border border-win/20 rounded-xl">
+                      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Long</p>
+                      <p className={`text-2xl font-black ${stats.longWR >= 50 ? 'text-win' : 'text-loss'}`}>{stats.longWR.toFixed(0)}%</p>
+                      <p className="text-xs text-text-muted mt-1">{stats.longTrades} trades</p>
+                      <p className={`text-xs font-mono mt-1 ${stats.longPnL > 0 ? 'text-win' : 'text-loss'}`}>{stats.longPnL > 0 ? '+' : ''}{blurMoney(stats.longPnL)}</p>
+                    </div>
+                    <div className="p-4 bg-loss/5 border border-loss/20 rounded-xl">
+                      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Short</p>
+                      <p className={`text-2xl font-black ${stats.shortWR >= 50 ? 'text-win' : 'text-loss'}`}>{stats.shortWR.toFixed(0)}%</p>
+                      <p className="text-xs text-text-muted mt-1">{stats.shortTrades} trades</p>
+                      <p className={`text-xs font-mono mt-1 ${stats.shortPnL > 0 ? 'text-win' : 'text-loss'}`}>{stats.shortPnL > 0 ? '+' : ''}{blurMoney(stats.shortPnL)}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-background-secondary border border-border rounded-lg">
+                      <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Current Streak</p>
+                      <p className={`text-xl font-black mt-1 ${stats.currentWinStreak > 0 ? 'text-win' : stats.currentLossStreak > 0 ? 'text-loss' : 'text-foreground'}`}>
+                        {stats.currentWinStreak > 0 ? `${stats.currentWinStreak}W 🔥` : stats.currentLossStreak > 0 ? `${stats.currentLossStreak}L ❄️` : '—'}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-background-secondary border border-border rounded-lg">
+                      <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Best Streak</p>
+                      <p className="text-xl font-black mt-1 text-win">{stats.maxWinStreak}W</p>
+                      <p className="text-xs text-text-muted">worst: {stats.maxLossStreak}L</p>
+                    </div>
+                  </div>
+                  {stats.avgDurationMins !== null && (
+                    <div className="p-3 bg-background-secondary border border-border rounded-lg">
+                      <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Avg Trade Duration</p>
+                      <p className="text-xl font-black mt-1 text-foreground">
+                        {stats.avgDurationMins! >= 60
+                          ? `${Math.floor(stats.avgDurationMins! / 60)}h ${Math.round(stats.avgDurationMins! % 60)}m`
+                          : `${Math.round(stats.avgDurationMins!)}m`}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Asset Performance */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Asset Performance</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Win rate and net PnL per instrument, sorted by profitability.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 max-h-[360px] overflow-y-auto pr-2">
+                {(stats.assetPerformance || []).length === 0 ? (
+                  <p className="text-sm text-text-muted text-center py-4">No asset data available.</p>
+                ) : (
+                  stats.assetPerformance.map((a: any, i: number) => (
+                    <div key={i} className="flex items-center gap-3 p-2.5 bg-background-secondary rounded-lg border border-border">
+                      <span className="text-xs text-text-muted font-mono w-5 shrink-0">#{i+1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm">{a.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${a.winRate >= 50 ? 'bg-win' : 'bg-loss'}`} style={{ width: `${a.winRate}%` }} />
+                          </div>
+                          <span className={`text-xs font-semibold shrink-0 ${a.winRate >= 50 ? 'text-win' : 'text-loss'}`}>{a.winRate.toFixed(0)}%</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className={`text-sm font-mono font-bold ${a.netPnL > 0 ? 'text-win' : 'text-loss'}`}>{a.netPnL > 0 ? '+' : ''}{blurMoney(a.netPnL)}</p>
+                        <p className="text-xs text-text-muted">{a.total} trades</p>
                       </div>
                     </div>
                   ))

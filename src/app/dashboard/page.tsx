@@ -168,7 +168,7 @@ export default function DashboardPage() {
     const variance = moodScores.length
       ? moodScores.reduce((acc, s) => acc + Math.pow(s - mean, 2), 0) / moodScores.length
       : 0;
-    const emotionalVariance = variance < 0.5 ? 'Low' : variance < 1.2 ? 'Medium' : 'High';
+    const emotionalVariance = (variance < 0.5 ? 'Low' : variance < 1.2 ? 'Medium' : 'High') as 'Low' | 'Medium' | 'High';
     const emotionalStability = variance < 0.5 ? 'stable' : variance < 1.2 ? 'moderate' : 'volatile';
 
     const sortedByDate = [...closed].sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
@@ -178,13 +178,13 @@ export default function DashboardPage() {
       else break;
     }
     const recentTradesToday = sortedByDate.filter(t => t.trade_date === new Date().toISOString().split('T')[0]).length;
-    const revengeRisk = currentLossStreak >= 3 && recentTradesToday >= 2
+    const revengeRisk = (currentLossStreak >= 3 && recentTradesToday >= 2
       ? 'High'
       : currentLossStreak >= 2
         ? 'Medium'
         : currentLossStreak >= 1
           ? 'Low'
-          : 'None';
+          : 'None') as 'None' | 'Low' | 'Medium' | 'High';
 
     const todayCheckin = checkins.find(c => c.checkin_date === new Date().toISOString().split('T')[0]);
     const moodFactor = todayCheckin ? todayCheckin.mood_score / 5 : 1;
@@ -356,14 +356,15 @@ export default function DashboardPage() {
         else if (complianceRate > 85) addInsight(`Discipline Strength: You meet all criteria ${complianceRate.toFixed(0)}% of the time. Keep following your process.`, 'edge');
       }
 
+      const sortedByDateDesc = [...closed].sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
       let currentStreak = 0;
-      for (const t of sortedByDate) {
+      for (const t of sortedByDateDesc) {
         if (t.net_pnl > 0) currentStreak++;
         else break;
       }
       if (currentStreak >= 3) addInsight(`Win Streak: ${currentStreak} consecutive wins. Stay process-oriented and avoid overconfidence.`, 'behavior');
       let lossStreak = 0;
-      for (const t of sortedByDate) {
+      for (const t of sortedByDateDesc) {
         if (t.net_pnl < 0) lossStreak++;
         else break;
       }
@@ -401,6 +402,76 @@ export default function DashboardPage() {
         if (avgPlanned > 0 && avgAchieved < avgPlanned * 0.5) {
           addInsight(`R:R Leak: You're capturing ${avgAchieved.toFixed(2)}R on average versus ${avgPlanned.toFixed(2)}R planned. Review trade management.`, 'risk');
         }
+
+        // Avg Win vs Avg Loss ratio
+        const wins = closed.filter(t => t.net_pnl > 0);
+        const losses = closed.filter(t => t.net_pnl < 0);
+        if (wins.length >= 3 && losses.length >= 3) {
+          const avgWinAmt = wins.reduce((a, t) => a + t.net_pnl, 0) / wins.length;
+          const avgLossAmt = Math.abs(losses.reduce((a, t) => a + t.net_pnl, 0) / losses.length);
+          const ratio = avgLossAmt > 0 ? avgWinAmt / avgLossAmt : 0;
+          if (ratio < 0.8) addInsight(`Win/Loss Imbalance: Your avg win (${avgWinAmt.toFixed(0)}) is smaller than your avg loss (${avgLossAmt.toFixed(0)}). Tighten stops or let winners run longer.`, 'risk');
+          else if (ratio > 2) addInsight(`Strong Payoff Ratio: Your avg win is ${ratio.toFixed(1)}× your avg loss. Excellent trade management.`, 'edge');
+        }
+
+        // Exit type analysis — are SL exits costing more than TP exits earn?
+        const slExits = closed.filter((t: any) => t.exit_type === 'Stop Loss' || t.sl_hit);
+        const tpExits = closed.filter((t: any) => t.exit_type === 'Final TP' || (!t.exit_type && !t.sl_hit && t.net_pnl > 0));
+        if (slExits.length >= 3 && tpExits.length >= 3) {
+          const slAvg = slExits.reduce((a, t) => a + t.net_pnl, 0) / slExits.length;
+          const tpAvg = tpExits.reduce((a, t) => a + t.net_pnl, 0) / tpExits.length;
+          if (Math.abs(slAvg) > tpAvg * 1.5) addInsight(`SL Cost Alert: Your average SL loss (${slAvg.toFixed(0)}) is >1.5× your average TP gain (${tpAvg.toFixed(0)}). Consider tighter risk management.`, 'risk');
+        }
+
+        // Breakeven exits — are you leaving money on the table?
+        const beExits = closed.filter((t: any) => t.exit_type === 'Breakeven' || t.status === 'Breakeven');
+        if (beExits.length >= 3) {
+          const beRate = (beExits.length / closed.length) * 100;
+          if (beRate > 25) addInsight(`Breakeven Habit: ${beRate.toFixed(0)}% of your trades close at breakeven. You may be moving SL too early — let trades breathe.`, 'behavior');
+        }
+      }
+
+      // Market regime analysis
+      if (closed.length >= 5) {
+        const regimeMap: Record<string, { wins: number; total: number }> = {};
+        closed.forEach(t => {
+          const r = (t as any).market_regime || 'Unknown';
+          if (!regimeMap[r]) regimeMap[r] = { wins: 0, total: 0 };
+          regimeMap[r].total++;
+          if (t.net_pnl > 0) regimeMap[r].wins++;
+        });
+        let bestRegime = '', bestRegimeWR = 0, worstRegime = '', worstRegimeWR = 100;
+        Object.entries(regimeMap).forEach(([r, d]) => {
+          if (d.total >= 2) {
+            const wr = (d.wins / d.total) * 100;
+            if (wr > bestRegimeWR) { bestRegimeWR = wr; bestRegime = r; }
+            if (wr < worstRegimeWR) { worstRegimeWR = wr; worstRegime = r; }
+          }
+        });
+        if (bestRegime && bestRegimeWR >= 60) addInsight(`Best Regime: You win ${bestRegimeWR.toFixed(0)}% in ${bestRegime} markets. Prioritize these conditions.`, 'edge');
+        if (worstRegime && worstRegimeWR <= 35 && worstRegime !== bestRegime) addInsight(`Avoid ${worstRegime}: Only ${worstRegimeWR.toFixed(0)}% win rate. Sit out or reduce size in these conditions.`, 'risk');
+      }
+
+      // Best day of week
+      if (closed.length >= 7) {
+        const dayMap: Record<string, { wins: number; total: number; pnl: number }> = {};
+        closed.forEach(t => {
+          const day = format(new Date(t.trade_date), 'EEEE');
+          if (!dayMap[day]) dayMap[day] = { wins: 0, total: 0, pnl: 0 };
+          dayMap[day].total++;
+          if (t.net_pnl > 0) dayMap[day].wins++;
+          dayMap[day].pnl += t.net_pnl;
+        });
+        let bestDay = '', bestDayWR = 0, worstDay = '', worstDayPnL = 0;
+        Object.entries(dayMap).forEach(([day, d]) => {
+          if (d.total >= 2) {
+            const wr = (d.wins / d.total) * 100;
+            if (wr > bestDayWR) { bestDayWR = wr; bestDay = day; }
+            if (d.pnl < worstDayPnL) { worstDayPnL = d.pnl; worstDay = day; }
+          }
+        });
+        if (bestDay && bestDayWR >= 65) addInsight(`Best Day: ${bestDay} is your strongest trading day (${bestDayWR.toFixed(0)}% win rate). Prioritize high-quality setups on this day.`, 'recommendation');
+        if (worstDay && worstDayPnL < 0) addInsight(`Worst Day: ${worstDay} is consistently unprofitable. Consider reducing size or skipping trades on this day.`, 'behavior');
       }
     }
 
