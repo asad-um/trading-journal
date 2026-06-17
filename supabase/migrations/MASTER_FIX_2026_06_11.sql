@@ -545,9 +545,35 @@ SET asset_list = '[
 WHERE TRUE; -- Updates ALL existing users
 
 -- ============================================================
+-- SECTION 5: Gamification RLS policies (idempotent)
+-- ============================================================
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can read own gamification" ON user_gamification;
+DROP POLICY IF EXISTS "Users can update own gamification" ON user_gamification;
+DROP POLICY IF EXISTS "Users can insert own gamification" ON user_gamification;
+
+-- Recreate policies
+CREATE POLICY "Users can read own gamification"
+  ON user_gamification
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own gamification"
+  ON user_gamification
+  FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own gamification"
+  ON user_gamification
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================
 -- Verification queries (run these after to check)
 -- ============================================================
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'daily_checkins';
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'trades' AND column_name LIKE '%timeframe%';
 -- SELECT COUNT(*) FROM user_settings;
 -- SELECT * FROM pg_trigger WHERE tgname LIKE 'tr_%';
+-- SELECT * FROM pg_policies WHERE tablename = 'user_gamification';
