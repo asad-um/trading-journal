@@ -100,6 +100,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
   const status = useWatch({ control: form.control, name: "status" });
   const tps_hit = useWatch({ control: form.control, name: "tps_hit" });
   const sl_hit = useWatch({ control: form.control, name: "sl_hit" });
+  const exit_type = useWatch({ control: form.control, name: "exit_type" });
 
   useEffect(() => {
     async function init() {
@@ -378,7 +379,18 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
 
       const sessionDetected = detectSession(data.trade_time_utc || "14:30", settings?.sessions_list || []);
 
-      const net_pnl = calculateGrossPnL(data.tp_levels.map((t: any) => ({ rr: t.rr, positionPercent: t.position_percent })), riskAmount, Array.isArray(data.tps_hit) ? data.tps_hit : [], !!data.sl_hit);
+      // Use exit_type if set, otherwise fall back to legacy sl_hit boolean
+      const exitTypeForCalc = data.exit_type || (data.sl_hit ? 'Stop Loss' : null);
+      const net_pnl = calculateGrossPnL(
+        data.tp_levels.map((t: any) => ({ rr: t.rr, positionPercent: t.position_percent })),
+        riskAmount,
+        Array.isArray(data.tps_hit) ? data.tps_hit : [],
+        exitTypeForCalc,
+        data.adjusted_sl_price ?? undefined,
+        data.entry_price,
+        data.stop_loss_price,
+        data.direction
+      );
       const actual_rr_achieved = riskAmount ? (net_pnl / riskAmount) : 0;
       const weighted_avg_rr_planned = calculateWeightedRR(data.tp_levels.map(t => ({ rr: t.rr, positionPercent: t.position_percent })));
 
@@ -430,38 +442,6 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       setIsSubmitting(false);
     }
   };
-
-  // Single source of truth for status/checkbox sync to prevent infinite loops
-  useEffect(() => {
-    const currentTpsHit = Array.isArray(tps_hit) ? tps_hit : [];
-    const currentSlHit = !!sl_hit;
-    const currentStatus = status;
-    const totalTps = tpFields.length;
-
-    // If SL is hit, status must be Closed - Loss and clear TPs
-    if (currentSlHit) {
-      if (currentTpsHit.length > 0) form.setValue('tps_hit', [], { shouldDirty: true });
-      if (currentStatus !== 'Closed - Loss') form.setValue('status', 'Closed - Loss', { shouldDirty: true });
-      return;
-    }
-
-    // If TPs are hit, determine if Partial or Closed - Win
-    if (currentTpsHit.length > 0) {
-      const maxTpHit = Math.max(...currentTpsHit);
-      if (maxTpHit >= totalTps && currentStatus !== 'Closed - Win') {
-        form.setValue('status', 'Closed - Win', { shouldDirty: true });
-      } else if (maxTpHit < totalTps && currentStatus === 'Open') {
-        form.setValue('status', 'Partial', { shouldDirty: true });
-      }
-      return;
-    }
-
-    // If no TPs hit and no SL hit, but status is Closed - Loss/Win, revert to Open
-    if (currentTpsHit.length === 0 && !currentSlHit && 
-        (currentStatus === 'Closed - Loss' || currentStatus === 'Closed - Win')) {
-      form.setValue('status', 'Open', { shouldDirty: true });
-    }
-  }, [tps_hit, sl_hit, status, tpFields.length, form]);
 
   // Keyboard shortcut listener
   useEffect(() => {
@@ -966,24 +946,73 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-3 p-4 bg-background-secondary rounded-lg border border-border shadow-sm">
-                    <FormField control={form.control} name="sl_hit" render={({ field }) => (
-                      <FormItem className="flex items-center space-y-0 space-x-3">
+                  {/* Exit Type */}
+                  <FormField control={form.control} name="exit_type" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">How Was the Remaining Position Exited?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
-                          <input 
-                            type="checkbox" 
-                            className="h-5 w-5 rounded border-border bg-background text-loss focus:ring-loss focus:ring-offset-background cursor-pointer" 
-                            checked={!!field.value}
-                            onChange={field.onChange}
-                          />
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select exit type..." />
+                          </SelectTrigger>
                         </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm font-semibold text-foreground">Stop Loss Hit?</FormLabel>
-                          <p className="text-xs text-text-muted">Check this if the trade stopped out.</p>
-                        </div>
+                        <SelectContent>
+                          <SelectItem value="Final TP">Final TP — All targets hit</SelectItem>
+                          <SelectItem value="Stop Loss">Stop Loss — Stopped out</SelectItem>
+                          <SelectItem value="Breakeven">Breakeven — Closed at entry</SelectItem>
+                          <SelectItem value="Adjusted SL">Adjusted SL — SL moved above/below entry</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-text-muted mt-1">This determines how the remaining position PnL is calculated.</p>
+                    </FormItem>
+                  )} />
+
+                  {/* Adjusted SL Price — only shown when exit_type = Adjusted SL */}
+                  {exit_type === 'Adjusted SL' && (
+                    <FormField control={form.control} name="adjusted_sl_price" render={({ field }) => (
+                      <FormItem className="animate-in fade-in slide-in-from-top-2 duration-200">
+                        <FormLabel className="text-sm font-medium">Adjusted SL Price</FormLabel>
+                        <FormControl>
+                          <Input type="text" inputMode="decimal" className="h-10" placeholder="Price where SL was moved to..." {...field} value={field.value ?? ""} />
+                        </FormControl>
+                        <p className="text-xs text-text-muted">The price your SL was moved to (e.g. above entry for a Long). PnL for remaining position will be calculated from this level.</p>
+                        <FormMessage />
                       </FormItem>
                     )} />
-                  </div>
+                  )}
+
+                  {/* Legacy SL Hit checkbox — kept for backward compat, hidden when exit_type is set */}
+                  {!exit_type && (
+                    <div className="flex items-center space-x-3 p-4 bg-background-secondary rounded-lg border border-border shadow-sm">
+                      <FormField control={form.control} name="sl_hit" render={({ field }) => (
+                        <FormItem className="flex items-center space-y-0 space-x-3">
+                          <FormControl>
+                            <input 
+                              type="checkbox" 
+                              className="h-5 w-5 rounded border-border bg-background text-loss focus:ring-loss focus:ring-offset-background cursor-pointer" 
+                              checked={!!field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="text-sm font-semibold text-foreground">Stop Loss Hit? (Legacy)</FormLabel>
+                            <p className="text-xs text-text-muted">Use Exit Type above for more precise control.</p>
+                          </div>
+                        </FormItem>
+                      )} />
+                    </div>
+                  )}
+
+                  {/* Trade Close Time */}
+                  <FormField control={form.control} name="trade_close_time" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Close Date & Time (UTC) <span className="text-text-muted font-normal">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" className="h-10" {...field} value={field.value ?? ""} />
+                      </FormControl>
+                      <p className="text-xs text-text-muted">Used to calculate trade duration in statistics.</p>
+                    </FormItem>
+                  )} />
 
                 </div>
               </div>

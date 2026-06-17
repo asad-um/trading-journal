@@ -40,7 +40,16 @@ export interface Trade {
   id: string;
   user_id: string;
   trade_date: string;
+  /** @deprecated use trade_open_time instead */
   trade_time_utc: string;
+  /** Replaces trade_time_utc — time the trade was opened (HH:MM UTC) */
+  trade_open_time?: string;
+  /** ISO timestamp when the trade was fully closed */
+  trade_close_time?: string | null;
+  /** How the remaining position was exited */
+  exit_type?: 'Final TP' | 'Stop Loss' | 'Breakeven' | 'Adjusted SL' | null;
+  /** Price at which SL was moved to (only used when exit_type = 'Adjusted SL') */
+  adjusted_sl_price?: number | null;
   date_logged: string;
   session: 'Asia' | 'London' | 'NYSE' | 'London/NYSE Overlap' | 'Off-Hours';
   highest_timeframe?: 'Monthly' | 'Weekly' | 'Daily' | '4H';

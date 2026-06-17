@@ -44,46 +44,95 @@ export function calculatePotentialPnL(riskAmount: number, rr: number, positionPe
 
 /**
  * Calculates Gross PnL depending on outcomes.
+ *
+ * Supports 4 exit scenarios for the remaining position after TPs:
+ *   - 'Final TP'   : all TPs hit, nothing remaining → 0 extra
+ *   - 'Stop Loss'  : remaining position stopped out at full risk
+ *   - 'Breakeven'  : remaining position closed at entry → 0 extra
+ *   - 'Adjusted SL': remaining position closed at adjusted SL price
+ *                    (requires entryPrice, slPrice, direction, adjustedSlPrice)
+ *
+ * Legacy mode (exitType = undefined, slHit = true) preserved for backward compat.
  */
 export function calculateGrossPnL(
   tpLevels: { rr: number; positionPercent: number }[],
   riskAmount: number,
   tpsHit: number[],
-  slHit: boolean
+  slHitOrExitType: boolean | 'Final TP' | 'Stop Loss' | 'Breakeven' | 'Adjusted SL' | null | undefined,
+  adjustedSlPrice?: number,
+  entryPrice?: number,
+  slPrice?: number,
+  direction?: 'Long' | 'Short'
 ): number {
-  if (slHit && tpsHit.length === 0) {
-    return -riskAmount;
+  // Normalise: legacy boolean → exit type string
+  let exitType: 'Final TP' | 'Stop Loss' | 'Breakeven' | 'Adjusted SL' | null;
+  if (typeof slHitOrExitType === 'boolean') {
+    exitType = slHitOrExitType ? 'Stop Loss' : null;
+  } else {
+    exitType = slHitOrExitType ?? null;
   }
-  
-  if (slHit && tpsHit.length > 0) {
-    let pnl = 0;
-    let hitPercent = 0;
-    
-    tpsHit.forEach(hitIndex => {
-      const tp = tpLevels[hitIndex - 1]; // Assuming 1-indexed
-      if (tp) {
-        pnl += riskAmount * tp.rr * (tp.positionPercent / 100);
-        hitPercent += tp.positionPercent;
-      }
-    });
-    
-    const remainingPercent = 100 - hitPercent;
-    const loss = riskAmount * (remainingPercent / 100);
-    return pnl - loss;
-  }
-  
-  if (!slHit) {
-    let pnl = 0;
-    tpsHit.forEach(hitIndex => {
-      const tp = tpLevels[hitIndex - 1];
-      if (tp) {
-        pnl += riskAmount * tp.rr * (tp.positionPercent / 100);
-      }
-    });
+
+  // Calculate PnL for all hit TPs
+  let pnl = 0;
+  let hitPercent = 0;
+  tpsHit.forEach(hitIndex => {
+    const tp = tpLevels[hitIndex - 1]; // 1-indexed
+    if (tp) {
+      pnl += riskAmount * tp.rr * (tp.positionPercent / 100);
+      hitPercent += tp.positionPercent;
+    }
+  });
+
+  const remainingPercent = 100 - hitPercent;
+
+  // If nothing remaining (all TPs hit or no exit type), return TP gains only
+  if (remainingPercent <= 0 || exitType === null || exitType === 'Final TP') {
     return pnl;
   }
-  
-  return 0;
+
+  // Apply exit type to remaining position
+  switch (exitType) {
+    case 'Stop Loss':
+      pnl -= riskAmount * (remainingPercent / 100);
+      break;
+
+    case 'Breakeven':
+      // Remaining closed at entry — no gain, no loss
+      break;
+
+    case 'Adjusted SL': {
+      // Compute RR of adjusted SL vs entry
+      if (adjustedSlPrice != null && entryPrice != null && slPrice != null && direction) {
+        const originalRisk = Math.abs(entryPrice - slPrice);
+        if (originalRisk > 0) {
+          const adjustedMove = direction === 'Long'
+            ? adjustedSlPrice - entryPrice   // positive = above entry (profit)
+            : entryPrice - adjustedSlPrice;  // positive = below entry (profit)
+          const adjustedRR = adjustedMove / originalRisk;
+          pnl += riskAmount * adjustedRR * (remainingPercent / 100);
+        }
+      }
+      break;
+    }
+  }
+
+  return pnl;
+}
+
+/**
+ * Calculates trade duration in minutes between open and close times.
+ * Returns null if either time is missing.
+ */
+export function calculateTradeDuration(openTime: string | null | undefined, closeTime: string | null | undefined): number | null {
+  if (!openTime || !closeTime) return null;
+  try {
+    const open = new Date(openTime).getTime();
+    const close = new Date(closeTime).getTime();
+    if (isNaN(open) || isNaN(close)) return null;
+    return Math.round((close - open) / 60000); // minutes
+  } catch {
+    return null;
+  }
 }
 
 /**
