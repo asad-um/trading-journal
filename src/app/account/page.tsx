@@ -169,20 +169,19 @@ export default function AccountPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setIsSubmittingEvent(false); return; }
 
-    const startBal = parseFloat(newAccountBalance) || 0;
-
+    // New accounts always start at $0. The first deposit sets the starting balance.
     const { error } = await supabase.from('portfolios').insert({
       user_id: user.id,
       name: newAccountName.trim(),
-      starting_balance: startBal,
-      current_balance: startBal,
+      starting_balance: 0,
+      current_balance: 0,
       is_active: false
     });
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Success", description: "New live account created." });
+      toast({ title: "Success", description: "New live account created. Log a deposit to fund it." });
       setIsCreateDialogOpen(false);
       setNewAccountName("");
       setNewAccountBalance("");
@@ -407,18 +406,6 @@ export default function AccountPage() {
                   autoFocus
                 />
               </div>
-              <div>
-                <Label htmlFor="accBal" className="text-xs uppercase tracking-wider text-text-muted mb-2 block">Starting Balance</Label>
-                <Input
-                  id="accBal"
-                  type="number"
-                  step="0.01"
-                  value={newAccountBalance}
-                  onChange={(e) => setNewAccountBalance(e.target.value)}
-                  placeholder="e.g., 100000"
-                  className="h-10 font-mono"
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} disabled={isSubmittingEvent}>Cancel</Button>
@@ -434,3 +421,4 @@ export default function AccountPage() {
     </AppLayout>
   );
 }
+
