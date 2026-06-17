@@ -106,6 +106,22 @@ export default function AccountPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !activePortfolio) { setIsSubmittingEvent(false); return; }
 
+    // If this is the first deposit on a zero-balance account, lock the
+    // starting_balance to the deposit amount so the dashboard "Initial"
+    // label and all statistics reflect the real funded amount.
+    if (dialogType === 'deposit' && activePortfolio.starting_balance === 0) {
+      const { error: portfolioError } = await supabase
+        .from('portfolios')
+        .update({ starting_balance: amount })
+        .eq('id', activePortfolio.id);
+
+      if (portfolioError) {
+        toast({ title: "Error", description: portfolioError.message, variant: "destructive" });
+        setIsSubmittingEvent(false);
+        return;
+      }
+    }
+
     const { error } = await supabase.from("account_events").insert({
       user_id: user.id,
       portfolio_id: activePortfolio.id,
