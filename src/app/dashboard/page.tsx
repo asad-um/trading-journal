@@ -18,6 +18,8 @@ import { MentalEdgeCheckIn } from "@/components/dashboard/mental-edge-checkin";
 import { CumulativePnlChart } from "@/components/dashboard/cumulative-pnl-chart";
 import { VolumeTrackerChart } from "@/components/dashboard/volume-tracker-chart";
 import { TradeTabs } from "@/components/dashboard/trade-tabs";
+import { DailyQuestsWidget } from "@/components/dashboard/daily-quests-widget";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -29,7 +31,7 @@ export default function DashboardPage() {
   const [avgMood, setAvgMood] = useState(0);
   const [avgDiscipline, setAvgDiscipline] = useState(0);
   const [checkins, setCheckins] = useState<DailyCheckin[]>([]);
-  const [gamification, setGamification] = useState<{ xp: number; level: number; title: string; badges: string[] } | null>(null);
+  const [gamification, setGamification] = useState<{ xp: number; level: number; title: string; badges: string[]; quests_completed: Record<string, string> } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,12 +74,12 @@ export default function DashboardPage() {
       }
 
       const { data: gamificationRes } = await supabase.from('user_gamification')
-        .select('xp, level, badges')
+        .select('xp, level, badges, quests_completed')
         .eq('user_id', user.id)
         .maybeSingle();
       if (gamificationRes) {
         const title = ["Novice", "Apprentice", "Trader", "Senior Trader", "Elite", "Master", "Legend"][Math.min(Math.max(gamificationRes.level - 1, 0), 6)];
-        setGamification({ xp: gamificationRes.xp, level: gamificationRes.level, title, badges: gamificationRes.badges || [] });
+        setGamification({ xp: gamificationRes.xp, level: gamificationRes.level, title, badges: gamificationRes.badges || [], quests_completed: gamificationRes.quests_completed || {} });
       }
 
       if (checkinRes) {
@@ -134,7 +136,7 @@ export default function DashboardPage() {
     onDailyCheckin(user.id).then(update => {
       if (update) {
         const title = ["Novice", "Apprentice", "Trader", "Senior Trader", "Elite", "Master", "Legend"][Math.min(Math.max(update.levelUp?.new || levelFromXp(update.xp) - 1, 0), 6)];
-        setGamification(prev => ({ xp: update.xp, level: update.levelUp?.new || prev?.level || levelFromXp(update.xp), title, badges: Object.keys(update.questsCompleted) }));
+        setGamification(prev => ({ xp: update.xp, level: update.levelUp?.new || prev?.level || levelFromXp(update.xp), title, badges: prev?.badges || [], quests_completed: update.questsCompleted }));
         if (update.levelUp) toast({ title: "Level Up!", description: `You reached ${title} (Level ${update.levelUp.new})` });
       }
     }).catch(console.error);
@@ -530,6 +532,21 @@ export default function DashboardPage() {
           <CumulativePnlChart data={stats.cumulativePnlData} />
           <VolumeTrackerChart data={stats.volumeData} />
         </div>
+
+        {/* Daily Quests */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              🎯 Daily Quests
+              <span className="text-xs font-normal text-text-muted ml-1">Reset at midnight UTC</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DailyQuestsWidget
+              completedQuestIds={Object.keys(gamification?.quests_completed || {})}
+            />
+          </CardContent>
+        </Card>
 
         <div className="bg-card rounded-xl border shadow-sm">
           <TradeTabs recentTrades={stats.recentTrades} openPositions={stats.openPositions} />
