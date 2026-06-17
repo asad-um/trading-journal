@@ -455,6 +455,82 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
+  // Clipboard paste handler — intercepts Ctrl+V / Cmd+V with an image in clipboard
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      // Don't intercept paste inside text inputs / textareas / contenteditable
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (!file) return;
+
+          const currentCount = (form.getValues('pre_trade_images')?.length || 0) + (form.getValues('post_trade_images')?.length || 0);
+          if (currentCount >= 3) {
+            toast({ title: "Upload Limit Reached", description: "You can upload a maximum of 3 images per trade.", variant: "destructive" });
+            return;
+          }
+          if (file.size > 5 * 1024 * 1024) {
+            toast({ title: "File Too Large", description: "Pasted image must be under 5MB.", variant: "destructive" });
+            return;
+          }
+
+          const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+          if (!cloudName) return;
+
+          setIsUploading(true);
+          toast({ title: "Pasting Image…", description: "Uploading clipboard screenshot." });
+
+          try {
+            const formData = new FormData();
+            // Give the pasted file a proper name
+            const ext = file.type.split('/')[1] || 'png';
+            const namedFile = new File([file], `paste-${Date.now()}.${ext}`, { type: file.type });
+            formData.append('file', namedFile);
+
+            const signRes = await fetch('/api/sign-cloudinary');
+            const signData = await signRes.json();
+            if (!signRes.ok || !signData.signature) throw new Error("Secure upload unavailable.");
+
+            formData.append('api_key', process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || '');
+            formData.append('timestamp', signData.timestamp);
+            formData.append('signature', signData.signature);
+
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+              method: 'POST',
+              body: formData,
+            });
+            if (!response.ok) throw new Error('Upload failed');
+            const data = await response.json();
+
+            const newImage = { url: data.secure_url, public_id: data.public_id, caption: 'Pre-Trade' };
+            const currentImages = form.getValues('pre_trade_images') || [];
+            form.setValue('pre_trade_images', [...currentImages, newImage]);
+            toast({ title: "Screenshot Pasted ✓", description: `Image added (${currentCount + 1}/3).` });
+          } catch (err: unknown) {
+            toast({ title: "Paste Failed", description: (err as Error).message, variant: "destructive" });
+          } finally {
+            setIsUploading(false);
+          }
+          break; // Only handle first image in clipboard
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [form, toast]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4 text-center">
@@ -731,7 +807,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
               <span className="bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded text-sm">3</span> 
               Trade Screenshots
             </CardTitle>
-            <p className="text-xs text-text-muted">Upload up to 3 images total. Each image must be labeled Pre-Trade or Post-Trade.</p>
+            <p className="text-xs text-text-muted">Upload up to 3 images total. You can also <kbd className="px-1 py-0.5 rounded bg-background-secondary border border-border text-[10px] font-mono">Ctrl+V</kbd> / <kbd className="px-1 py-0.5 rounded bg-background-secondary border border-border text-[10px] font-mono">⌘V</kbd> anywhere on the page to paste a screenshot directly.</p>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-3 bg-background-secondary rounded-lg border border-border">
