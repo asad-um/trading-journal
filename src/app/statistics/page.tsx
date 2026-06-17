@@ -13,6 +13,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, ScatterChart
 import { format } from "date-fns";
 import { InfoTooltip } from "@/components/info-tooltip";
 import { usePrivacy } from "@/components/privacy-provider";
+import { TradeCalendar } from "@/components/statistics/trade-calendar";
 
 export default function StatisticsPage() {
   const [showStrategyAll, setShowStrategyAll] = useState(false);
@@ -646,6 +647,28 @@ export default function StatisticsPage() {
                     </div>
                   ))
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Trade Calendar */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Trade Calendar</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Daily PnL heatmap. Click any day to see trades taken.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TradeCalendar
+                  trades={trades.filter(t => ['Closed - Win', 'Closed - Loss', 'Breakeven', 'Partial'].includes(t.status)).map(t => ({
+                    id: t.id,
+                    trade_date: t.trade_date,
+                    symbol: t.symbol,
+                    direction: t.direction,
+                    net_pnl: t.net_pnl,
+                    status: t.status,
+                    actual_rr_achieved: t.actual_rr_achieved,
+                  }))}
+                  blurMoney={blurMoney}
+                />
               </CardContent>
             </Card>
 
