@@ -192,6 +192,19 @@ export default function AccountPage() {
 
     const initialBalance = parseFloat(newAccountBalance);
     if (!isNaN(initialBalance) && initialBalance > 0 && newPortfolio) {
+      // Set starting_balance and current_balance directly on the portfolio
+      const { error: updateError } = await supabase
+        .from('portfolios')
+        .update({ starting_balance: initialBalance, current_balance: initialBalance })
+        .eq('id', newPortfolio.id);
+
+      if (updateError) {
+        toast({ title: "Warning", description: "Account created but balance update failed: " + updateError.message, variant: "destructive" });
+        setIsSubmittingEvent(false);
+        return;
+      }
+
+      // Record the deposit event for ledger history
       const { error: eventError } = await supabase.from("account_events").insert({
         user_id: user.id,
         portfolio_id: newPortfolio.id,
@@ -201,7 +214,7 @@ export default function AccountPage() {
       });
 
       if (eventError) {
-        toast({ title: "Warning", description: "Account created but initial deposit failed: " + eventError.message, variant: "destructive" });
+        toast({ title: "Warning", description: "Account created but deposit event failed: " + eventError.message, variant: "destructive" });
       }
     }
 
