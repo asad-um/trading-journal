@@ -22,7 +22,7 @@ const navItems = [
   { href: "/playbook", label: "Playbook", icon: Camera },
   { href: "/account", label: "Account", icon: Wallet },
   { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/help", label: "Help / Guides", icon: HelpCircle },
+  { href: "/help", label: "Help", icon: HelpCircle },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
