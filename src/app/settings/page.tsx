@@ -27,7 +27,6 @@ export default function SettingsPage() {
     appearance: true,
     sessions: true,
     criteria: true,
-    mistakes: true,
     assets: true,
   });
 
@@ -473,43 +472,6 @@ export default function SettingsPage() {
               </div>
             </Card>
 
-            <Card className="border-border/60 shadow-sm bg-background overflow-hidden">
-              <button onClick={() => toggleSection('mistakes')} className="w-full flex justify-between items-center p-4 md:p-6 hover:bg-background-secondary/30 transition-colors">
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold">Mistake Categories</h3>
-                  <p className="text-xs text-text-muted">Common mistakes you make (used for journaling discipline).</p>
-                </div>
-                {expandedSections.mistakes ? <ChevronUp className="h-5 w-5 text-text-muted"/> : <ChevronDown className="h-5 w-5 text-text-muted"/>}
-              </button>
-              <div className={`transition-all duration-300 ease-in-out ${expandedSections.mistakes ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
-                <CardContent className="space-y-3 pt-0 pb-6 px-4 md:px-6">
-                  <div className="flex gap-2">
-                    <Input placeholder="New mistake category..." value={newItemInputs['mistake_categories_list'] || ""} onChange={e => setNewItemInputs(p => ({...p, mistake_categories_list: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddListItem('mistake_categories_list')} className="h-9" />
-                    <Button size="sm" onClick={() => handleAddListItem('mistake_categories_list')}><Plus className="h-4 w-4" /></Button>
-                  </div>
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                    {settings?.mistake_categories_list?.map((item: any) => (
-                      <div key={item.id} className="flex justify-between items-center gap-2 p-2 bg-background-secondary rounded border border-border">
-                        {editingItem?.listName === 'mistake_categories_list' && editingItem?.id === item.id ? (
-                          <div className="flex-1 flex gap-2">
-                            <Input value={editingItem.value} onChange={e => setEditingItem(prev => prev ? { ...prev, value: e.target.value } : null)} onKeyDown={e => e.key === 'Enter' && handleSaveEdit('mistake_categories_list')} className="h-8 text-sm" autoFocus />
-                            <Button size="sm" variant="secondary" onClick={() => handleSaveEdit('mistake_categories_list')}>Save</Button>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="text-sm truncate flex-1">{item.label}</span>
-                            <div className="flex items-center">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-primary" onClick={() => handleEditListItem('mistake_categories_list', item)}><Pencil className="h-3.5 w-3.5" /></Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-loss" onClick={() => handleRemoveListItem('mistake_categories_list', item.id || "")}><Trash2 className="h-4 w-4" /></Button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </div>
-            </Card>
           </TabsContent>
 
           <TabsContent value="assets" className="space-y-6 pt-4">
