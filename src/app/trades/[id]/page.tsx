@@ -37,7 +37,7 @@ export default function TradeDetailPage({ params }: { params: { id: string } }) 
   return (
     <AppLayout>
       <div className="p-4 md:p-6 max-w-5xl mx-auto w-full space-y-6 pb-20">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center pr-12 md:pr-0">
           <div className="flex items-center gap-4">
             <Link href="/trades"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
             <h1 className="text-2xl font-bold flex items-center gap-3">
@@ -46,8 +46,8 @@ export default function TradeDetailPage({ params }: { params: { id: string } }) 
               <Badge variant="outline" className="bg-background-tertiary">{trade.status}</Badge>
             </h1>
           </div>
-          <Link href={`/trades/${trade.id}/edit`}>
-            <Button variant="outline"><Edit className="h-4 w-4 mr-2" /> Edit Trade</Button>
+          <Link href={`/trades/${trade.id}/edit`} className="shrink-0">
+            <Button variant="outline" size="sm" className="md:size-default"><Edit className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Edit Trade</span></Button>
           </Link>
         </div>
 
