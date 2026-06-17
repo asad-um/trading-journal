@@ -431,7 +431,7 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     }
   };
 
-  // Smart Status Sync: Auto-update status when TP/SL checkboxes change
+  // Single source of truth for status/checkbox sync to prevent infinite loops
   useEffect(() => {
     const currentTpsHit = Array.isArray(tps_hit) ? tps_hit : [];
     const currentSlHit = !!sl_hit;
@@ -439,16 +439,14 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
     const totalTps = tpFields.length;
 
     // If SL is hit, status must be Closed - Loss and clear TPs
-    if (currentSlHit && currentStatus !== 'Closed - Loss') {
-      form.setValue('status', 'Closed - Loss', { shouldDirty: true });
-      if (currentTpsHit.length > 0) {
-        form.setValue('tps_hit', [], { shouldDirty: true });
-      }
+    if (currentSlHit) {
+      if (currentTpsHit.length > 0) form.setValue('tps_hit', [], { shouldDirty: true });
+      if (currentStatus !== 'Closed - Loss') form.setValue('status', 'Closed - Loss', { shouldDirty: true });
       return;
     }
 
     // If TPs are hit, determine if Partial or Closed - Win
-    if (currentTpsHit.length > 0 && !currentSlHit) {
+    if (currentTpsHit.length > 0) {
       const maxTpHit = Math.max(...currentTpsHit);
       if (maxTpHit >= totalTps && currentStatus !== 'Closed - Win') {
         form.setValue('status', 'Closed - Win', { shouldDirty: true });
@@ -464,23 +462,6 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       form.setValue('status', 'Open', { shouldDirty: true });
     }
   }, [tps_hit, sl_hit, status, tpFields.length, form]);
-
-  // Sync checkboxes when status is manually changed
-  useEffect(() => {
-    const currentStatus = status;
-    const currentSlHit = !!sl_hit;
-    const currentTpsHit = Array.isArray(tps_hit) ? tps_hit : [];
-
-    if (currentStatus === 'Closed - Loss') {
-      if (!currentSlHit) form.setValue('sl_hit', true, { shouldDirty: true });
-      if (currentTpsHit.length > 0) form.setValue('tps_hit', [], { shouldDirty: true });
-    } else if (currentStatus === 'Closed - Win' || currentStatus === 'Partial') {
-      if (currentSlHit) form.setValue('sl_hit', false, { shouldDirty: true });
-    } else if (currentStatus === 'Open' || currentStatus === 'Breakeven' || currentStatus === 'Cancelled') {
-      if (currentSlHit) form.setValue('sl_hit', false, { shouldDirty: true });
-      if (currentTpsHit.length > 0) form.setValue('tps_hit', [], { shouldDirty: true });
-    }
-  }, [status, sl_hit, tps_hit, form]);
 
   // Keyboard shortcut listener
   useEffect(() => {
