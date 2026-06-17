@@ -88,6 +88,7 @@ export interface Trade {
   would_take_again?: boolean;
   pre_trade_reasoning?: string;
   post_trade_lesson?: string;
+  tags?: string[];
   pre_trade_images: TradeImage[];
   post_trade_images: TradeImage[];
   created_at: string;

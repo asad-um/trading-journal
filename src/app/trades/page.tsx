@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { Trade } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Edit, Trash2, GitCompare, X } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, GitCompare, X, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -25,6 +25,7 @@ export default function TradesPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { blurMoney } = usePrivacy();
   const { filters, setFilter, clearFilters, activeFilterCount, isHydrated } = useTradeFilters();
@@ -145,7 +146,18 @@ export default function TradesPage() {
   const tradeSessions = Array.from(new Set(trades.map(t => t.session).filter(Boolean))) as string[];
   const sessions = Array.from(new Set([...configuredSessions, ...tradeSessions]));
 
-  const filteredTrades = isHydrated ? applyTradeFilters(trades, filters) : trades;
+  const filteredTrades = (isHydrated ? applyTradeFilters(trades, filters) : trades).filter(t => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.symbol?.toLowerCase().includes(q) ||
+      t.strategy?.toLowerCase().includes(q) ||
+      t.sub_strategy?.toLowerCase().includes(q) ||
+      (t as any).pre_trade_reasoning?.toLowerCase().includes(q) ||
+      (t as any).post_trade_lesson?.toLowerCase().includes(q) ||
+      ((t as any).tags || []).some((tag: string) => tag.toLowerCase().includes(q))
+    );
+  });
 
   const getStatusColor = (status: string) => {
     if (status.includes("Win")) return "text-win border-win/30 bg-win/10";
@@ -196,6 +208,23 @@ export default function TradesPage() {
             </Button>
           </div>
         )}
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search by symbol, strategy, notes, or #tag…"
+            className="w-full h-10 pl-9 pr-9 rounded-lg border border-border bg-background-secondary text-sm placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/60 transition-all"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
         <TradeFiltersPanel
           filters={filters}

@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle,  } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UploadCloud, X, Zap, CheckCircle2,  } from "lucide-react";
+import { Loader2, UploadCloud, X, Zap, CheckCircle2, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
@@ -1144,6 +1144,85 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                 </FormControl>
               </FormItem>
             )} />
+
+            {/* Tag Chip Input */}
+            <FormField control={form.control} name="tags" render={({ field }) => {
+              const [tagInput, setTagInput] = useState("");
+              const SUGGESTED_TAGS = ["#fomo", "#revenge", "#patient", "#early-exit", "#perfect-entry", "#news-spike", "#oversize", "#undersize", "#tilt", "#disciplined", "#missed-entry", "#late-entry"];
+              const currentTags: string[] = field.value || [];
+
+              const addTag = (tag: string) => {
+                const cleaned = tag.trim().toLowerCase().replace(/\s+/g, '-');
+                if (!cleaned) return;
+                const withHash = cleaned.startsWith('#') ? cleaned : `#${cleaned}`;
+                if (!currentTags.includes(withHash) && currentTags.length < 10) {
+                  field.onChange([...currentTags, withHash]);
+                }
+                setTagInput("");
+              };
+
+              const removeTag = (tag: string) => {
+                field.onChange(currentTags.filter(t => t !== tag));
+              };
+
+              return (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Tag className="h-3.5 w-3.5 text-text-muted" />
+                    Trade Tags
+                    <span className="text-xs text-text-muted font-normal">(optional · max 10)</span>
+                  </FormLabel>
+
+                  {currentTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {currentTags.map(tag => (
+                        <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary border border-primary/30 rounded-full text-xs font-medium">
+                          {tag}
+                          <button type="button" onClick={() => removeTag(tag)} className="hover:text-loss transition-colors ml-0.5">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={e => setTagInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          addTag(tagInput);
+                        }
+                        if (e.key === 'Backspace' && !tagInput && currentTags.length > 0) {
+                          removeTag(currentTags[currentTags.length - 1]);
+                        }
+                      }}
+                      placeholder="Type a tag and press Enter (e.g. #fomo)"
+                      className="h-9 text-sm"
+                    />
+                    <Button type="button" variant="outline" size="sm" className="h-9 px-3" onClick={() => addTag(tagInput)} disabled={!tagInput.trim()}>
+                      Add
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {SUGGESTED_TAGS.filter(t => !currentTags.includes(t)).slice(0, 8).map(tag => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => addTag(tag)}
+                        className="px-2 py-0.5 bg-background-secondary border border-border rounded-full text-xs text-text-muted hover:border-primary/50 hover:text-primary transition-colors"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-text-muted">Press Enter or comma to add. Tags help you search and filter trades later.</p>
+                </FormItem>
+              );
+            }} />
           </CardContent>
         </Card>
 

@@ -57,6 +57,7 @@ export const tradeSchema = z.object({
   would_take_again: emptyAsUndefined(z.preprocess((val) => val === "true" || val === true ? true : (val === "false" || val === false ? false : undefined), z.boolean().optional())),
   pre_trade_reasoning: emptyAsUndefined(z.string().optional()),
   post_trade_lesson: emptyAsUndefined(z.string().optional()),
+  tags: z.array(z.string()).default([]),
   pre_trade_images: z.array(z.object({
     url: z.string(),
     public_id: z.string(),
