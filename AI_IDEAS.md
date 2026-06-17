@@ -3,7 +3,7 @@
 > Brainstormed by AI (Cline) for the WJournal trading journal project.
 > This document serves as a living roadmap for architecture and analytics enhancements.
 
-> **Last Batch Integrated: Batch 8 (2026-06-12)** — Session time ranges, strategy-aligned criteria, collapsible filters, help refresh, Smart Insights v3, reset-password reliability, mobile nav/logout polish.
+> **Last Batch Integrated: Batch 4+5 (2026-06-17)** — Statistics enhancements (session/direction/asset/streaks/duration), Smart Insights expansion (regime/day-of-week/exit-type/payoff-ratio), clipboard paste, trade outcome overhaul.
 
 ---
 
@@ -13,6 +13,8 @@
 2. [Statistics to Maximize Edge](#2-statistics-to-maximize-edge)
 3. [Implementation Roadmap](#3-implementation-roadmap)
 4. [Quick Wins (Do These First)](#4-quick-wins-do-these-first)
+5. [User-Requested Features](#5-user-requested-features)
+6. [New Ideas — Session 2026-06-17](#6-new-ideas--session-2026-06-17)
 
 ---
 
@@ -24,7 +26,7 @@
 Pattern: 100% Client-Side SPA
 Every page fetches independently via useEffect
 No caching layer
-Trade form: 905 lines (monolithic)
+Trade form: ~1000 lines (monolithic)
 Settings page: 651 lines
 No pagination (hardcoded .limit(100))
 No virtualized lists
@@ -67,7 +69,7 @@ const { data: trades, isLoading } = useQuery({
 });
 ```
 
-#### 1.2 Split the 905-Line Trade Form
+#### 1.2 Split the Trade Form
 
 **Target Structure:**
 ```
@@ -266,15 +268,12 @@ const sortino = (annualizedReturn - riskFreeRate) / downsideDeviation;
 const calmar = annualizedReturn / Math.abs(maxDrawdown);
 ```
 
-#### 2.1.4 Consecutive Win/Loss Streaks
+#### 2.1.4 Consecutive Win/Loss Streaks ✅ Done (Batch 4)
 
 **Metrics:**
-- Longest winning streak (current & all-time)
-- Longest losing streak (current & all-time)
-- Average streak length
-- Current streak status
-
-**Insight:** "You're on a 5-trade losing streak — 87% chance of tilt. Consider stepping away."
+- Longest winning streak (current & all-time) ✅
+- Longest losing streak (current & all-time) ✅
+- Current streak status ✅
 
 #### 2.1.5 Monthly Performance Table
 
@@ -306,14 +305,15 @@ const riskOfRuin = Math.pow(
 
 ### Tier 2: Advanced Edge Analysis
 
-#### 2.2.1 Trade Duration Analysis
+#### 2.2.1 Trade Duration Analysis ✅ Done (Batch 4)
 
 **Metrics:**
-- Average time in winning trades
-- Average time in losing trades
-- "Winner hold time / Loser hold time" ratio
+- Average trade duration (for trades with close time) ✅
 
-**Insight:** "You hold losers 3.2x longer than winners. Cut losses faster."
+**Still to add:**
+- Average time in winning trades vs losing trades
+- "Winner hold time / Loser hold time" ratio
+- **Insight:** "You hold losers 3.2x longer than winners. Cut losses faster."
 
 #### 2.2.2 MAE / MFE Analysis
 
@@ -356,13 +356,19 @@ Hour   | Win% | P&L
 
 **Insight:** "Kelly says risk 2.1% per trade. You risk 1.5%. You're being too conservative, leaving returns on the table."
 
-#### 2.2.6 Slippage Analysis
+#### 2.2.6 Session Performance ✅ Done (Batch 4)
 
-**Track:**
-- Planned entry vs actual entry
-- Planned exit vs actual exit
-- Average slippage per broker
-- Slippage by asset class
+- Win rate and avg R:R per session ✅
+- Net PnL per session ✅
+
+#### 2.2.7 Asset Performance ✅ Done (Batch 4)
+
+- Win rate per instrument with progress bar ✅
+- Net PnL per instrument, ranked ✅
+
+#### 2.2.8 Direction Analysis ✅ Done (Batch 4)
+
+- Long vs Short win rate and PnL breakdown ✅
 
 ---
 
@@ -441,7 +447,7 @@ Simulation Results (next 100 trades):
 
 **Alert:** "You have 3 trades correlated at 0.85 — you're effectively 3x exposed to US Tech."
 
-#### 2.3.7 Psychological Metrics Panel
+#### 2.3.7 Psychological Metrics Panel ✅ Done (Batch 5)
 
 ```
 Discipline Score:     78/100  (trending ↑)
@@ -450,8 +456,6 @@ Revenge Trade Risk:   Medium  (2 losses in a row)
 Optimal Trade Size:   1.8%    (based on current mood)
 Recommendation:       Size down 20% today
 ```
-
-**Based on:** Daily check-ins, streak analysis, recent performance volatility.
 
 ---
 
@@ -466,14 +470,17 @@ Recommendation:       Size down 20% today
 ### Phase 2: Essential Stats (Week 3-4)
 - [ ] Sharpe, Sortino, Calmar ratios
 - [ ] Monthly performance table
-- [ ] Consecutive streaks
+- [x] Consecutive streaks ✅ Batch 4
 - [ ] Risk of Ruin calculator
 
 ### Phase 3: Advanced Analytics (Week 5-6)
 - [ ] MAE/MFE scatter plot
 - [ ] R-multiple histogram
-- [ ] Entry timing heatmap
-- [ ] Trade duration analysis
+- [ ] Entry timing heatmap (upgrade from scatter to grid)
+- [x] Trade duration analysis ✅ Batch 4 (avg duration)
+- [x] Session performance ✅ Batch 4
+- [x] Asset performance ✅ Batch 4
+- [x] Direction analysis ✅ Batch 4
 
 ### Phase 4: Professional Grade (Week 7-8)
 - [ ] Benchmark comparison
@@ -508,7 +515,7 @@ Recommendation:       Size down 20% today
 **Feature:** Upload trade screenshots → AI analyzes entry/exit zones → Heatmap overlay showing where you typically enter and exit.
 
 **Implementation:**
-- Image upload for each trade setup
+- Image upload for each trade setup ✅ Done
 - Coordinate mapping: user clicks entry/exit points on chart image
 - Aggregated heatmap across all trades per asset
 - "You enter XAUUSD 73% of the time in the upper 20% of the daily range"
@@ -527,7 +534,7 @@ Recommendation:       Size down 20% today
 
 **Example:** "This week you took 5 trades without confirming volume. Your volume-confirmed trades had a 78% win rate. Next week: No entry without volume confluence."
 
-### 5.4 Gamification System
+### 5.4 Gamification System ✅ Partially Done
 
 **Badges (Achievement System):**
 - `"10 Trade Win Streak"` — 10 consecutive wins
@@ -538,7 +545,7 @@ Recommendation:       Size down 20% today
 - `"Psychology Pro"` — Mood score avg > 4.0 for 30 days
 - `"Diversified"` — Traded 5+ different assets in a month
 
-**XP & Leveling:**
+**XP & Leveling:** ✅ Done
 - XP per trade logged: +10
 - XP per daily check-in: +5
 - XP per review completed: +20
@@ -577,21 +584,20 @@ Recommendation:       Size down 20% today
 - Can be dismissed but tracks "skipped" count
 - Settings to enable/disable requirement
 
-### 5.6 Market Regime Auto-Tagging
+### 5.6 Market Regime Auto-Tagging ✅ Partially Done
 
 **Feature:** Automatically tag each trade with the market condition it was taken in.
 
 **Regime Types:**
-- **Trending** — ADX > 25, clear directional bias
-- **Choppy/Range** — ADX < 20, price oscillating
-- **News-Driven** — High volatility spike, economic calendar hit
-- **Breakout** — Price breaking key structure
-- **Reversal** — Price reversing from extreme
+- **Trending** — ADX > 25, clear directional bias ✅ Manual tag in form
+- **Choppy/Range** — ADX < 20, price oscillating ✅ Manual tag
+- **News-Driven** — High volatility spike, economic calendar hit ✅ Manual tag
+- **Breakout** — Price breaking key structure ✅ Manual tag
+- **Reversal** — Price reversing from extreme ✅ Manual tag
 
-**Visualization:**
-- Win rate BY regime in Statistics
-- "You win 71% in breakouts but only 34% in choppy markets"
-- Suggested regime-filtered position sizing
+**Still to add:**
+- Smart Insights now uses regime data ✅ Batch 5
+- Auto-tagging via external API (future)
 
 ### 5.7 Multi-Device Sync & Offline Mode
 
@@ -659,15 +665,249 @@ IF consecutive_losses >= 3
 
 ---
 
+## 6. New Ideas — Session 2026-06-17
+
+> Brainstormed after completing Batches 1–5. These are fresh ideas not yet in the roadmap.
+
+### 6.1 Trade Calendar View
+
+**Feature:** A full calendar (month/week view) where each day shows a color-coded summary of trades taken.
+
+**Visual:**
+- Green day = net positive PnL
+- Red day = net negative PnL
+- Grey = no trades
+- Click a day → expand to show all trades that day
+
+**Why:** Instantly reveals patterns — "I always lose on Mondays", "I overtrade on Fridays", "I'm most profitable mid-week."
+
+**Implementation:** Use a lightweight calendar library (e.g. `react-big-calendar` or custom CSS grid). Data already available from existing trade queries.
+
+---
+
+### 6.2 Trade Notes Search & Tag System
+
+**Feature:** Full-text search across all pre/post trade notes + a tagging system.
+
+**Tags (auto-suggested + custom):**
+- `#fomo`, `#revenge`, `#patient`, `#early-exit`, `#perfect-entry`, `#news-spike`
+- Auto-suggest tags based on note content (simple keyword matching)
+
+**Why:** Right now notes are write-only. A searchable, tagged archive turns them into a knowledge base.
+
+**Implementation:**
+- Add `tags text[]` column to trades table
+- Tag input in trade form (comma-separated or chip UI)
+- Search bar on Trade Log page that searches `pre_trade_reasoning` + `post_trade_lesson` + `tags`
+
+---
+
+### 6.3 Goal Setting & Progress Tracker
+
+**Feature:** Let users set monthly/quarterly trading goals and track progress.
+
+**Goal Types:**
+- Win rate target (e.g. "Achieve 60% win rate this month")
+- PnL target (e.g. "+$500 this month")
+- Discipline target (e.g. "No trades without full checklist for 30 days")
+- Trade count target (e.g. "Log 20 trades this month")
+- Streak target (e.g. "5 consecutive winning trades")
+
+**UI:**
+- Progress bars on Dashboard
+- "You're 73% of the way to your monthly PnL goal"
+- Celebration animation on goal completion
+- Historical goal completion rate
+
+**DB:** New `goals` table with `type`, `target_value`, `current_value`, `period`, `status`.
+
+---
+
+### 6.4 Trade Comparison Mode
+
+**Feature:** Select 2–3 trades side-by-side to compare their setups, outcomes, and notes.
+
+**Why:** "Why did this XAUUSD Long win 3R but this similar one lost? Let me compare them."
+
+**UI:**
+- Checkbox on trade list to select trades
+- "Compare Selected" button appears when 2+ selected
+- Side-by-side card layout showing all fields
+- Highlight differences in red/green
+
+---
+
+### 6.5 Sharpe / Sortino / Calmar Ratios on Statistics Page
+
+**Feature:** Add the three key risk-adjusted return metrics to the Core Performance section.
+
+**Formulas:**
+```typescript
+// Sharpe: excess return per unit of total volatility
+const sharpe = (annualReturn - 0.05) / stdDev;
+
+// Sortino: excess return per unit of downside volatility  
+const sortino = (annualReturn - 0.05) / downsideStdDev;
+
+// Calmar: annual return / max drawdown
+const calmar = annualReturn / maxDrawdownPercent;
+```
+
+**Target benchmarks:**
+- Sharpe > 1.0 = good, > 2.0 = excellent
+- Sortino > 1.5 = good
+- Calmar > 1.0 = good
+
+**Implementation:** All data already available. Pure calculation addition to `statistics/page.tsx`.
+
+---
+
+### 6.6 Monthly Performance Table
+
+**Feature:** A table on the Statistics page showing month-by-month breakdown.
+
+```
+Month    | Trades | Win% | Avg R | Net PnL | vs Prior | Cumulative
+---------|--------|------|-------|---------|----------|----------
+Jan 2026 |   12   | 58%  | 1.8R  | +$450   |    —     | +$450
+Feb 2026 |   15   | 47%  | 0.9R  | -$120   |   ↓      | +$330
+Mar 2026 |   10   | 60%  | 2.1R  | +$680   |   ↑      | +$1,010
+```
+
+**Color coding:** Green rows = profitable months, red = losing months.
+
+**Implementation:** Group existing `closed` trades by `format(trade_date, 'MMM yyyy')`. No new DB columns needed.
+
+---
+
+### 6.7 R-Multiple Distribution Chart
+
+**Feature:** A bar chart showing how your trades distribute across R-multiples.
+
+```
+-3R  | ██ (2)
+-2R  | ████ (4)
+-1R  | ████████ (8)
+ 0R  | ██ (2)
++1R  | ██████ (6)
++2R  | ████ (4)
++3R  | ██ (2)
++4R+ | █ (1)
+```
+
+**Why:** Instantly shows if your edge is real. A positive expectancy system has a right-skewed distribution.
+
+**Implementation:** Bucket `actual_rr_achieved` values into integer R-multiples. Use Recharts `BarChart`.
+
+---
+
+### 6.8 Trade Form — Quick Entry Mode
+
+**Feature:** A minimal "Quick Log" mode for the trade form that shows only the 5 most essential fields.
+
+**Quick Mode Fields:**
+1. Symbol
+2. Direction (Long/Short toggle)
+3. Entry Price
+4. Stop Loss
+5. Status
+
+**Why:** Sometimes you just want to log a trade fast without filling in 20 fields. Full details can be added later.
+
+**Implementation:**
+- Toggle button at top of trade form: "Quick Mode / Full Mode"
+- Quick mode hides Sections 2, 3, 5, 6 (strategy, screenshots, outcome, notes)
+- Saves with sensible defaults for hidden fields
+
+---
+
+### 6.9 Export to CSV / PDF
+
+**Feature:** Export trade log and statistics to CSV or PDF.
+
+**CSV Export:**
+- All trade fields as columns
+- Filterable by date range, symbol, status
+- Compatible with Excel/Google Sheets
+
+**PDF Export:**
+- Statistics summary page
+- Equity curve chart
+- Top 5 best/worst trades
+- Monthly performance table
+- Branded with WJournal header
+
+**Implementation:**
+- CSV: `papaparse` library, client-side generation
+- PDF: `jspdf` + `html2canvas` for chart capture
+
+---
+
+### 6.10 Notification System (In-App)
+
+**Feature:** A notification bell in the header that shows actionable alerts.
+
+**Alert Types:**
+- 🔴 "You're on a 3-trade loss streak — consider stepping back"
+- 🟡 "You haven't logged a trade in 5 days — are you still active?"
+- 🟢 "New personal best: 5 consecutive wins!"
+- 🔵 "Your discipline score dropped 20 points this week"
+- ⚪ "Daily check-in reminder (9:00 AM)"
+
+**Implementation:**
+- `notifications` table in Supabase with `user_id`, `type`, `message`, `read`, `created_at`
+- Server-side function generates notifications based on trade data
+- Bell icon in `app-layout.tsx` header with unread count badge
+- Dropdown panel showing recent notifications
+
+---
+
+### 6.11 Trade Form — Partial Close Tracking
+
+**Feature:** Track partial position closes more granularly.
+
+**Current:** "Partial" status is a single checkbox. No way to track which % was closed at what price.
+
+**Enhancement:**
+- Add `partial_closes` JSONB column: `[{ date, price, percent_closed, pnl }]`
+- UI: "Add Partial Close" button in Section 5 that adds a row
+- Running PnL updates as partials are added
+- Final close marks remaining position
+
+**Why:** Many traders scale out of positions. This gives accurate PnL tracking for each partial.
+
+---
+
+### 6.12 AI-Powered Trade Review (Future)
+
+**Feature:** After logging a trade, an AI model reviews the pre/post notes and gives structured feedback.
+
+**Input:** Pre-trade reasoning + post-trade lesson + trade outcome
+
+**Output:**
+- "Your pre-trade reasoning was sound but you exited early — this is a pattern in 6 of your last 10 trades"
+- Mistake category auto-detection
+- Suggested improvement for next similar setup
+- Similarity score to past trades ("This setup is 87% similar to your XAUUSD Long on March 12 which hit 3R")
+
+**Implementation:** OpenAI API call via `/api/review-trade` route. Requires `OPENAI_API_KEY` env var.
+
+---
+
 ## 4. Quick Wins (Do These First)
 
 **Can implement in <30 minutes each:**
 
 1. **Add DB indexes** → Copy SQL from Section 2.3, run in Supabase
-2. **Monthly performance table** → Reuse existing stats calculation
-3. **Consecutive streak display** → Simple array loop
-4. **Sharpe ratio** → Formula uses data you already have
-5. **Strategy-aligned validation criteria** → ✅ Done in Batch 8
-6. **Collapsible filters panel** → ✅ Done in Batch 8
-7. **Help/Guides refresh + mobile nav** → ✅ Done in Batch 8
-8. **Smart Insights v3** → ✅ Done in Batch 8
+2. **Monthly performance table** → Reuse existing stats calculation (see 6.6)
+3. **Sharpe/Sortino/Calmar** → Pure math, data already available (see 6.5)
+4. **R-Multiple histogram** → Bucket `actual_rr_achieved`, use BarChart (see 6.7)
+5. **Trade calendar view** → CSS grid + existing trade data (see 6.1)
+6. **Export to CSV** → `papaparse`, client-side (see 6.9)
+7. **Quick Entry Mode** → Toggle to hide non-essential form sections (see 6.8)
+8. **Strategy-aligned validation criteria** → ✅ Done in Batch 8
+9. **Collapsible filters panel** → ✅ Done in Batch 8
+10. **Help/Guides refresh + mobile nav** → ✅ Done in Batch 8
+11. **Smart Insights v3** → ✅ Done in Batch 8
+12. **Session/Direction/Asset/Streak stats** → ✅ Done in Batch 4
+13. **Smart Insights expansion** → ✅ Done in Batch 5
