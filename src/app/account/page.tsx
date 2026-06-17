@@ -39,7 +39,7 @@ export default function AccountPage() {
   useEffect(() => {
     
       fetchData();
-      const channel = supabase.channel('realtime-page.tsx')
+      const channel = supabase.channel('realtime-account')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'account_events' }, () => fetchData(true))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))
         .subscribe();

@@ -43,7 +43,7 @@ export default function StatisticsPage() {
     }
     
       fetchData();
-      const channel = supabase.channel('realtime-page.tsx')
+      const channel = supabase.channel('realtime-statistics')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'trades' }, () => fetchData(true))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolios' }, () => fetchData(true))
         .subscribe();
