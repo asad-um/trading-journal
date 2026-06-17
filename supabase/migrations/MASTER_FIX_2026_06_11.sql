@@ -570,10 +570,44 @@ CREATE POLICY "Users can insert own gamification"
   WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================
+-- SECTION (Batch 2 — 2026-06-17): Trade Open/Close Time + Exit Type
+-- ============================================================
+
+-- Add trade_open_time (replaces trade_time_utc for new trades)
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS trade_open_time time;
+UPDATE trades SET trade_open_time = trade_time_utc::time WHERE trade_open_time IS NULL AND trade_time_utc IS NOT NULL;
+
+-- Add trade_close_time (nullable — set when trade is fully closed)
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS trade_close_time timestamptz;
+
+-- Add exit_type (how the remaining position was exited)
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS exit_type text;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_exit_type'
+  ) THEN
+    ALTER TABLE trades ADD CONSTRAINT chk_exit_type CHECK (
+      exit_type IS NULL OR exit_type IN ('Final TP', 'Stop Loss', 'Breakeven', 'Adjusted SL')
+    );
+  END IF;
+END
+$$;
+
+-- Add adjusted_sl_price (price SL was moved to, used when exit_type = 'Adjusted SL')
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS adjusted_sl_price numeric(20,8);
+
+-- Fix analysis_timeframe constraint to include 5M
+ALTER TABLE trades DROP CONSTRAINT IF EXISTS chk_analysis_timeframe;
+ALTER TABLE trades ADD CONSTRAINT chk_analysis_timeframe
+  CHECK (analysis_timeframe IS NULL OR analysis_timeframe IN ('4H','2H','1H','30M','15M','5M'));
+
+-- ============================================================
 -- Verification queries (run these after to check)
 -- ============================================================
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'daily_checkins';
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'trades' AND column_name LIKE '%timeframe%';
+-- SELECT column_name FROM information_schema.columns WHERE table_name = 'trades' AND column_name IN ('trade_open_time','trade_close_time','exit_type','adjusted_sl_price');
 -- SELECT COUNT(*) FROM user_settings;
 -- SELECT * FROM pg_trigger WHERE tgname LIKE 'tr_%';
 -- SELECT * FROM pg_policies WHERE tablename = 'user_gamification';

@@ -394,7 +394,8 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
       const actual_rr_achieved = riskAmount ? (net_pnl / riskAmount) : 0;
       const weighted_avg_rr_planned = calculateWeightedRR(data.tp_levels.map(t => ({ rr: t.rr, positionPercent: t.position_percent })));
 
-      const tradeData = {
+      // Build trade payload — strip undefined values to avoid schema cache errors on old trades
+      const tradePayload: Record<string, unknown> = {
         ...data,
         user_id: user.id,
         portfolio_id: activePort.id,
@@ -407,6 +408,12 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
         pre_trade_reasoning: data.pre_trade_reasoning ? DOMPurify.sanitize(data.pre_trade_reasoning) : undefined,
         post_trade_lesson: data.post_trade_lesson ? DOMPurify.sanitize(data.post_trade_lesson) : undefined
       };
+
+      // Remove keys whose value is undefined so Supabase doesn't try to write them
+      // (critical for old trades that pre-date new columns)
+      const tradeData = Object.fromEntries(
+        Object.entries(tradePayload).filter(([, v]) => v !== undefined)
+      );
 
       if (initialData?.id) {
         const { error } = await supabase.from('trades').update(tradeData).eq('id', initialData.id);
@@ -1049,7 +1056,22 @@ export function TradeForm({ initialData }: { initialData?: Partial<TradeFormValu
                       <FormItem className="animate-in fade-in slide-in-from-top-2 duration-200">
                         <FormLabel className="text-sm font-medium">Adjusted SL Price</FormLabel>
                         <FormControl>
-                          <Input type="text" inputMode="decimal" className="h-10" placeholder="Price where SL was moved to..." {...field} value={field.value ?? ""} />
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            className="h-10"
+                            placeholder="e.g. 1952.50"
+                            {...field}
+                            value={field.value ?? ""}
+                            onKeyDown={(e) => {
+                              // Allow: digits, decimal point, backspace, delete, arrows, tab, home, end
+                              const allowed = /^[0-9.]$/.test(e.key) || [
+                                'Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
+                                'Tab','Home','End','Enter'
+                              ].includes(e.key) || (e.ctrlKey || e.metaKey);
+                              if (!allowed) e.preventDefault();
+                            }}
+                          />
                         </FormControl>
                         <p className="text-xs text-text-muted">The price your SL was moved to (e.g. above entry for a Long). PnL for remaining position will be calculated from this level.</p>
                         <FormMessage />
