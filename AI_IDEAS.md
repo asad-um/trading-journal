@@ -3,7 +3,7 @@
 > Brainstormed by AI (Cline) for the WJournal trading journal project.
 > This document serves as a living roadmap for architecture and analytics enhancements.
 
-> **Last Batch Integrated: Batch 4+5 (2026-06-17)** — Statistics enhancements (session/direction/asset/streaks/duration), Smart Insights expansion (regime/day-of-week/exit-type/payoff-ratio), clipboard paste, trade outcome overhaul.
+> **Last Batch Integrated: Batch 6 (2026-06-17)** — Trade Comparison Mode, Trade Calendar View, Trade Notes Search & Tag System, Daily Quests widget.
 
 ---
 
@@ -15,6 +15,7 @@
 4. [Quick Wins (Do These First)](#4-quick-wins-do-these-first)
 5. [User-Requested Features](#5-user-requested-features)
 6. [New Ideas — Session 2026-06-17](#6-new-ideas--session-2026-06-17)
+7. [Batch 6 — Shipped 2026-06-17](#7-batch-6--shipped-2026-06-17)
 
 ---
 
@@ -911,3 +912,94 @@ Mar 2026 |   10   | 60%  | 2.1R  | +$680   |   ↑      | +$1,010
 11. **Smart Insights v3** → ✅ Done in Batch 8
 12. **Session/Direction/Asset/Streak stats** → ✅ Done in Batch 4
 13. **Smart Insights expansion** → ✅ Done in Batch 5
+14. **Trade Comparison Mode** → ✅ Done in Batch 6
+15. **Trade Calendar View** → ✅ Done in Batch 6
+16. **Trade Notes Search & Tag System** → ✅ Done in Batch 6
+17. **Daily Quests widget** → ✅ Done in Batch 6
+
+---
+
+## 7. Batch 6 — Shipped 2026-06-17
+
+### 7.1 Trade Comparison Mode ✅
+
+**What was built:**
+- Checkbox column on Trade Log page to select 2–3 trades
+- "Compare N Trades" button + floating banner when trades are selected
+- `/trades/compare?ids=...` page with side-by-side card layout
+- Highlights differences between trades (direction, strategy, PnL, RR, status)
+- Mobile-friendly stacked layout
+- Works on both desktop table and mobile card views
+
+**Files changed:**
+- `src/app/trades/page.tsx` — checkbox selection, compare banner, router push
+- `src/app/trades/compare/page.tsx` — new comparison page
+
+---
+
+### 7.2 Trade Calendar View ✅
+
+**What was built:**
+- Monthly calendar grid on Statistics page (Monday-start weeks)
+- Green cells = profitable days, red = loss days, grey = no trades
+- Each cell shows net PnL + trade count
+- Click any day to expand a detail panel listing all trades taken
+- Month navigation (prev/next/today)
+- Monthly summary: trading days, trade count, net PnL, green day ratio
+- Legend for color coding
+- Privacy mode respects `blurMoney` for PnL values
+
+**Files changed:**
+- `src/components/statistics/trade-calendar.tsx` — new component
+- `src/app/statistics/page.tsx` — import + Card wrapper insertion
+
+---
+
+### 7.3 Trade Notes Search & Tag System ✅
+
+**What was built:**
+- `tags text[]` column added to `trades` table (with GIN index)
+- Tag chip input in Section 6 of trade form (pre-suggested tags + custom)
+- Press Enter/comma to add, Backspace to remove last tag
+- 12 pre-suggested tags: `#fomo`, `#revenge`, `#patient`, `#early-exit`, etc.
+- Max 10 tags per trade
+- Full-text search bar on Trade Log page
+- Searches: symbol, strategy, sub_strategy, pre_trade_reasoning, post_trade_lesson, tags
+- Live filtering as you type, clear button
+
+**Files changed:**
+- `supabase/migrations/add_trade_tags.sql` — DB migration
+- `src/types/index.ts` — `tags?: string[]` on Trade interface
+- `src/lib/validations/trade.ts` — `tags: z.array(z.string()).default([])`
+- `src/components/trades/trade-form.tsx` — tag chip input in Section 6
+- `src/app/trades/page.tsx` — search bar + filter logic
+
+---
+
+### 7.4 Daily Quests Widget ✅
+
+**What was built:**
+- `DailyQuestsWidget` component showing 5 daily quests
+- XP progress bar (earned/total XP for the day)
+- Each quest shows: name, description, XP reward, action link
+- Completed quests show strikethrough + green checkmark
+- "All quests complete" celebration state
+- Reads `quests_completed` from `user_gamification` table
+- Placed on Dashboard page below the charts section
+- Quests: Morning Routine, Trade Logger, Mistake Review, Check-In Hero, Edge Hunter
+
+**Files changed:**
+- `src/components/dashboard/daily-quests-widget.tsx` — new component
+- `src/app/dashboard/page.tsx` — fetch `quests_completed`, import widget, Card wrapper
+
+---
+
+### Next Batch Ideas (Batch 7)
+
+**High priority:**
+- [ ] Monthly Performance Table (Section 6.6) — pure calculation, no new DB
+- [ ] Sharpe / Sortino / Calmar ratios (Section 6.5) — pure math
+- [ ] R-Multiple Distribution Chart (Section 6.7) — bucket `actual_rr_achieved`
+- [ ] Goal Setting & Progress Tracker (Section 6.3) — new `goals` table
+- [ ] Quick Entry Mode for trade form (Section 6.8) — toggle to hide sections
+- [ ] Export to CSV (Section 6.9) — `papaparse`, client-side
